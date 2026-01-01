@@ -421,103 +421,100 @@ export default function JarvisGraph({
       .attr('fill', d => getNodeColor(d))
       .attr('fill-opacity', 0.2)
 
-    // Icon based on type
+    // Icon based on type - Using Lucide-style SVG icons as data URLs
     nodeElements.each(function(d) {
       const group = d3.select(this)
       const color = getNodeColor(d)
-      const size = getNodeSize(d) * 0.5
+      const iconSize = getNodeSize(d) * 0.55
 
+      // Create Lucide-style SVG icons
+      let iconSvg = ''
+      
       if (d.type === 'case') {
-        // Folder icon
-        group.append('path')
-          .attr('d', `M${-size} ${-size/2} L${-size/2} ${-size} L${size} ${-size} L${size} ${size} L${-size} ${size} Z`)
-          .attr('fill', 'none')
-          .attr('stroke', color)
-          .attr('stroke-width', 1.5)
-          .attr('filter', 'url(#glow)')
-        
-        group.append('line')
-          .attr('x1', -size * 0.6)
-          .attr('y1', 0)
-          .attr('x2', size * 0.6)
-          .attr('y2', 0)
-          .attr('stroke', color)
-          .attr('stroke-width', 1)
-        
-        group.append('line')
-          .attr('x1', -size * 0.6)
-          .attr('y1', size * 0.4)
-          .attr('x2', size * 0.3)
-          .attr('y2', size * 0.4)
-          .attr('stroke', color)
-          .attr('stroke-width', 1)
+        // FileText icon (case/document)
+        iconSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+        `
       } else if (d.type === 'person') {
-        // Person icon
-        group.append('circle')
-          .attr('cy', -size * 0.3)
-          .attr('r', size * 0.35)
-          .attr('fill', 'none')
-          .attr('stroke', color)
-          .attr('stroke-width', 1.5)
-        
-        group.append('path')
-          .attr('d', `M${-size * 0.6} ${size * 0.6} Q${-size * 0.6} ${size * 0.1} 0 ${size * 0.1} Q${size * 0.6} ${size * 0.1} ${size * 0.6} ${size * 0.6}`)
-          .attr('fill', 'none')
-          .attr('stroke', color)
-          .attr('stroke-width', 1.5)
-
-        // Role indicator
         if (d.role === 'Suspect') {
-          group.append('text')
-            .attr('x', size * 0.8)
-            .attr('y', -size * 0.5)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '10px')
-            .attr('fill', COLORS.red)
-            .text('!')
+          // UserX icon (suspect)
+          iconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="17" y1="8" x2="22" y2="13"/>
+              <line x1="22" y1="8" x2="17" y2="13"/>
+            </svg>
+          `
         } else if (d.role === 'Arrested') {
-          group.append('circle')
-            .attr('cx', size * 0.8)
-            .attr('cy', -size * 0.5)
-            .attr('r', 4)
-            .attr('fill', COLORS.orange)
+          // UserMinus icon (arrested)
+          iconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+          `
+        } else {
+          // User icon (reference/normal)
+          iconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          `
         }
       } else if (d.type === 'sample' || d.type === 'dna') {
-        // DNA Double Helix icon
-        const h = size * 0.9
-        
-        // Left strand
-        group.append('path')
-          .attr('d', `M${-size * 0.4} ${-h} 
-                      Q${size * 0.3} ${-h * 0.5} ${-size * 0.4} 0 
-                      Q${size * 0.3} ${h * 0.5} ${-size * 0.4} ${h}`)
-          .attr('fill', 'none')
-          .attr('stroke', color)
-          .attr('stroke-width', 2)
+        // DNA icon (double helix)
+        iconSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 15c6.667-6 13.333 0 20-6"/>
+            <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/>
+            <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/>
+            <path d="M17 6l-2.5-2.5"/>
+            <path d="M14 8l-1-1"/>
+            <path d="M7 18l2.5 2.5"/>
+            <path d="M3.5 14.5l.5.5"/>
+            <path d="M20.5 9.5l.5.5"/>
+            <path d="M10 16l1 1"/>
+            <path d="M2 9c6.667 6 13.333 0 20 6"/>
+          </svg>
+        `
+      } else if (d.type === 'cluster') {
+        // Network icon (cluster)
+        iconSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/>
+            <circle cx="12" cy="5" r="1"/>
+            <circle cx="19" cy="12" r="1"/>
+            <circle cx="5" cy="12" r="1"/>
+            <circle cx="12" cy="19" r="1"/>
+            <path d="m12 6 0 5"/>
+            <path d="m12 13 0 5"/>
+            <path d="m13 12 5 0"/>
+            <path d="m6 12 5 0"/>
+          </svg>
+        `
+      }
+
+      if (iconSvg) {
+        // Convert SVG to data URL
+        const encodedSvg = btoa(unescape(encodeURIComponent(iconSvg.trim())))
+        const dataUrl = `data:image/svg+xml;base64,${encodedSvg}`
+
+        group.append('image')
+          .attr('href', dataUrl)
+          .attr('x', -iconSize / 2)
+          .attr('y', -iconSize / 2)
+          .attr('width', iconSize)
+          .attr('height', iconSize)
           .attr('filter', 'url(#glow)')
-        
-        // Right strand
-        group.append('path')
-          .attr('d', `M${size * 0.4} ${-h} 
-                      Q${-size * 0.3} ${-h * 0.5} ${size * 0.4} 0 
-                      Q${-size * 0.3} ${h * 0.5} ${size * 0.4} ${h}`)
-          .attr('fill', 'none')
-          .attr('stroke', color)
-          .attr('stroke-width', 2)
-          .attr('filter', 'url(#glow)')
-        
-        // Connecting bars (base pairs)
-        const bars = [-0.6, -0.2, 0.2, 0.6]
-        bars.forEach(y => {
-          group.append('line')
-            .attr('x1', -size * 0.25)
-            .attr('y1', h * y)
-            .attr('x2', size * 0.25)
-            .attr('y2', h * y)
-            .attr('stroke', color)
-            .attr('stroke-opacity', 0.6)
-            .attr('stroke-width', 1.5)
-        })
       }
     })
 
