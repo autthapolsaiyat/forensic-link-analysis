@@ -2,10 +2,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import SmartDashboard from './pages/SmartDashboard'
-import GraphView from './pages/GraphView'
-import CaseGraphView from './pages/CaseGraphView'
-import AdvancedGraphView from './pages/AdvancedGraphView'
-import NetworkGraphView from './pages/NetworkGraphView'
 import JarvisNetworkPage from './pages/JarvisNetworkPage'
 import IconGallery from './pages/IconGallery'
 import PersonsPage from './pages/PersonsPage'
@@ -22,13 +18,12 @@ function App() {
         <Route index element={<SmartDashboard />} />
         <Route path="cases" element={<CaseListPage />} />
         <Route path="cases/:id" element={<CaseDetailPage />} />
-        <Route path="graph" element={<GraphView />} />
-        <Route path="graph/person/:id" element={<GraphView />} />
-        <Route path="graph/case/:id" element={<CaseGraphView />} />
-        <Route path="case-graph" element={<CaseGraphView />} />
-        <Route path="advanced-graph" element={<AdvancedGraphView />} />
+        <Route path="graph" element={<JarvisNetworkPage />} />
+        <Route path="graph/person/:id" element={<JarvisNetworkPage />} />
+        <Route path="graph/case/:id" element={<JarvisNetworkPage />} />
+        <Route path="case-graph" element={<JarvisNetworkPage />} />
+        <Route path="advanced-graph" element={<JarvisNetworkPage />} />
         <Route path="network-graph" element={<JarvisNetworkPage />} />
-        <Route path="network-graph-old" element={<NetworkGraphView />} />
         <Route path="icons" element={<IconGallery />} />
         <Route path="persons" element={<PersonsPage />} />
         <Route path="links" element={<LinksPage />} />

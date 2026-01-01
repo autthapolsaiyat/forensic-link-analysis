@@ -1,9 +1,9 @@
 // src/pages/JarvisNetworkPage.tsx
 // JARVIS-style Network Investigation with D3.js
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Search, ZoomIn, ZoomOut, RotateCcw, Download,
   AlertTriangle, Users, Loader2, Eye, Target,
@@ -43,6 +43,10 @@ interface NetworkStats {
 }
 
 export default function JarvisNetworkPage() {
+  const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const typeParam = searchParams.get('type') || 'case'
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEntity, setSelectedEntity] = useState<{ type: string; id: string } | null>(null)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
@@ -251,6 +255,13 @@ export default function JarvisNetworkPage() {
       setIsLoading(false)
     }
   }, [])
+
+  // Load from URL params on mount
+  useEffect(() => {
+    if (id) {
+      loadNetworkData(typeParam, id)
+    }
+  }, [id, typeParam, loadNetworkData])
 
   // Handle search result selection
   const handleSelectResult = (type: string, id: string) => {
