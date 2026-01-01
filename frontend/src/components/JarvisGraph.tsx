@@ -471,19 +471,16 @@ export default function JarvisGraph({
           `
         }
       } else if (d.type === 'sample' || d.type === 'dna') {
-        // DNA icon (double helix)
+        // DNA icon - clearer double helix design
         iconSvg = `
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 15c6.667-6 13.333 0 20-6"/>
-            <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/>
-            <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/>
-            <path d="M17 6l-2.5-2.5"/>
-            <path d="M14 8l-1-1"/>
-            <path d="M7 18l2.5 2.5"/>
-            <path d="M3.5 14.5l.5.5"/>
-            <path d="M20.5 9.5l.5.5"/>
-            <path d="M10 16l1 1"/>
-            <path d="M2 9c6.667 6 13.333 0 20 6"/>
+            <path d="M4 4h16"/>
+            <path d="M4 4c0 10 16 10 16 0"/>
+            <path d="M4 20c0-10 16-10 16 0"/>
+            <path d="M4 20h16"/>
+            <path d="M7 8h10"/>
+            <path d="M7 16h10"/>
+            <path d="M9 12h6"/>
           </svg>
         `
       } else if (d.type === 'cluster') {

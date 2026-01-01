@@ -7,14 +7,11 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Search, ZoomIn, ZoomOut, RotateCcw, Download,
   AlertTriangle, Users, Loader2, Eye, Target,
-  Network, Shield, Crosshair, Radio
+  Network, Shield, Crosshair, Radio,
+  FileText, UserX, UserMinus, User, Dna, FlaskConical
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
 import JarvisGraph from '../components/JarvisGraph'
-import {
-  CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon,
-  SampleIcon, DNAIcon, FingerprintIcon, DrugIcon
-} from '../components/ForensicIcons'
 
 interface GraphNode {
   id: string
@@ -503,32 +500,28 @@ export default function JarvisNetworkPage() {
           <p className="text-xs text-cyan-400/50 mb-3">Legend - Entity Types</p>
           <div className="space-y-2">
             <div className="flex items-center gap-3 text-sm">
-              <CaseIcon size={20} color="#00f0ff" />
+              <FileText size={20} className="text-cyan-400" style={{ filter: 'drop-shadow(0 0 4px #00f0ff)' }} />
               <span className="text-cyan-100/80">คดีหลัก</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <CaseIcon size={20} color="#a855f7" />
+              <FileText size={20} className="text-purple-400" style={{ filter: 'drop-shadow(0 0 4px #a855f7)' }} />
               <span className="text-cyan-100/80">คดีเชื่อมโยง</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <SuspectIcon size={20} color="#ff2d55" />
+              <UserX size={20} className="text-red-500" style={{ filter: 'drop-shadow(0 0 4px #ff2d55)' }} />
               <span className="text-cyan-100/80">Suspect</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <ArrestedIcon size={20} color="#ff6b35" />
+              <UserMinus size={20} className="text-orange-500" style={{ filter: 'drop-shadow(0 0 4px #ff6b35)' }} />
               <span className="text-cyan-100/80">Arrested</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <ReferenceIcon size={20} color="#39ff14" />
+              <User size={20} className="text-green-400" style={{ filter: 'drop-shadow(0 0 4px #39ff14)' }} />
               <span className="text-cyan-100/80">Reference</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <DNAIcon size={20} color="#4895ef" />
-              <span className="text-cyan-100/80">DNA Evidence</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <SampleIcon size={20} color="#4895ef" />
-              <span className="text-cyan-100/80">วัตถุพยาน</span>
+              <Dna size={20} className="text-blue-400" style={{ filter: 'drop-shadow(0 0 4px #4895ef)' }} />
+              <span className="text-cyan-100/80">DNA / วัตถุพยาน</span>
             </div>
           </div>
           
