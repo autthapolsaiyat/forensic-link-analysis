@@ -28,14 +28,10 @@ const swaggerOptions = {
             title: 'Forensic Link Analysis API',
             version: '1.0.0',
             description: 'API สำหรับระบบเชื่อมโยงข้อมูลนิติวิทยาศาสตร์ ศพฐ.10',
-            contact: {
-                name: 'PFSC10',
-                email: 'support@pfsc10.go.th'
-            }
         },
         servers: [
             { url: `http://localhost:${PORT}${API_PREFIX}`, description: 'Development' },
-            { url: `https://forensic-api.azurewebsites.net${API_PREFIX}`, description: 'Production' }
+            { url: `https://forensic-link-api.azurewebsites.net${API_PREFIX}`, description: 'Production' }
         ]
     },
     apis: ['./src/routes/*.js']
@@ -43,9 +39,17 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Middleware
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+// CORS - Allow all origins for now
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle preflight
+app.options('*', cors());
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(morgan('dev'));
 app.use(express.json());
 
