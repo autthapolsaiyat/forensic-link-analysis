@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import {
   Search, ZoomIn, ZoomOut, RotateCcw, Package, User,
-  ChevronLeft, FileText, Dna, ArrowRight
+  FileText, ArrowRight
 } from 'lucide-react'
-import { casesApi, searchApi } from '../services/api'
+import { casesApi, searchApi, personsApi } from '../services/api'
 
 interface Sample {
   sample_id: string
@@ -61,6 +61,28 @@ export default function CaseGraphView() {
     enabled: !!selectedCase,
   })
 
+  // Get linked cases for each person (extended graph)
+  const { data: linkedCasesMap } = useQuery({
+    queryKey: ['linked-cases', selectedCase, persons],
+    queryFn: async () => {
+      if (!persons || persons.length === 0) return {}
+      const map: Record<string, any[]> = {}
+      for (const person of persons) {
+        if (person.person_id) {
+          try {
+            const cases = await personsApi.getCases(person.person_id)
+            // Filter out current case
+            map[person.person_id] = cases.filter((c: any) => c.case_id !== selectedCase)
+          } catch {
+            map[person.person_id] = []
+          }
+        }
+      }
+      return map
+    },
+    enabled: !!persons && persons.length > 0,
+  })
+
   // Helper: Generate FIDS No
   const generateFidsNo = (caseNumber: string, sampleCount: number = 0): string => {
     if (!caseNumber) return '-'
@@ -75,15 +97,20 @@ export default function CaseGraphView() {
     return `${center}-DNA-${year}-${runningStr}-${sampleStr}`
   }
 
-  // Calculate positions for graph
+  // Calculate positions for extended graph
   const calculateLayout = () => {
     const sampleList = samples || []
     const personList = persons || []
+    const linkedCases = linkedCasesMap || {}
     
-    const centerX = 400
-    const centerY = 300
-    const sampleRadius = 150
-    const personRadius = 280
+    const centerX = 500
+    const centerY = 350
+    const sampleRadius = 120
+    const personRadius = 220
+    const linkedCaseRadius = 350
+
+    const nodes: any[] = []
+    const edges: any[] = []
 
     // Case node (center)
     const caseNode = {
@@ -91,82 +118,93 @@ export default function CaseGraphView() {
       type: 'case',
       x: centerX,
       y: centerY,
-      data: caseData
+      data: caseData,
+      isCenter: true
     }
+    nodes.push(caseNode)
 
     // Sample nodes (inner ring)
-    const sampleNodes = sampleList.map((sample: Sample, i: number) => {
+    sampleList.forEach((sample: Sample, i: number) => {
       const angle = (2 * Math.PI * i) / Math.max(sampleList.length, 1) - Math.PI / 2
-      return {
+      const node = {
         id: sample.sample_id,
         type: 'sample',
         x: centerX + sampleRadius * Math.cos(angle),
         y: centerY + sampleRadius * Math.sin(angle),
         data: sample
       }
+      nodes.push(node)
+      edges.push({
+        source: caseNode,
+        target: node,
+        type: 'has_sample'
+      })
     })
 
-    // Person nodes (outer ring)
-    const personNodes = personList.map((person: any, i: number) => {
+    // Person nodes (middle ring)
+    personList.forEach((person: any, i: number) => {
       const angle = (2 * Math.PI * i) / Math.max(personList.length, 1) - Math.PI / 2
-      return {
+      const personNode = {
         id: person.person_id,
         type: 'person',
         x: centerX + personRadius * Math.cos(angle),
         y: centerY + personRadius * Math.sin(angle),
         data: person
       }
-    })
+      nodes.push(personNode)
 
-    // Edges: Case -> Samples
-    const caseToSampleEdges = sampleNodes.map((node: any) => ({
-      source: caseNode,
-      target: node,
-      type: 'has_sample'
-    }))
+      // Connect samples to persons
+      const sampleIndex = i % Math.max(sampleList.length, 1)
+      if (sampleList[sampleIndex]) {
+        edges.push({
+          source: nodes.find(n => n.id === sampleList[sampleIndex].sample_id),
+          target: personNode,
+          type: 'dna_match'
+        })
+      }
 
-    // Edges: Samples -> Persons (DNA match)
-    const sampleToPersonEdges: any[] = []
-    sampleNodes.forEach((sampleNode: any) => {
-      personNodes.forEach((personNode: any) => {
-        // Check if this sample matches this person
-        if (personNode.data.sample_ids?.includes(sampleNode.id) || 
-            sampleNode.data.person_id === personNode.id) {
-          sampleToPersonEdges.push({
-            source: sampleNode,
-            target: personNode,
-            type: 'dna_match'
-          })
+      // Add linked cases for this person (outer ring)
+      const personLinkedCases = linkedCases[person.person_id] || []
+      personLinkedCases.forEach((linkedCase: any, j: number) => {
+        // Calculate position around the person
+        const linkedAngle = angle + ((j - (personLinkedCases.length - 1) / 2) * 0.3)
+        const linkedCaseNode = {
+          id: `linked_${linkedCase.case_id}`,
+          type: 'linked_case',
+          x: centerX + linkedCaseRadius * Math.cos(linkedAngle),
+          y: centerY + linkedCaseRadius * Math.sin(linkedAngle),
+          data: linkedCase
         }
+        
+        // Check if node already exists
+        if (!nodes.find(n => n.id === linkedCaseNode.id)) {
+          nodes.push(linkedCaseNode)
+        }
+        
+        edges.push({
+          source: personNode,
+          target: nodes.find(n => n.id === linkedCaseNode.id) || linkedCaseNode,
+          type: 'person_in_case'
+        })
       })
     })
 
-    // If no explicit matches, connect samples to persons by role
-    if (sampleToPersonEdges.length === 0) {
-      personNodes.forEach((personNode: any, i: number) => {
-        const sampleIndex = i % sampleNodes.length
-        if (sampleNodes[sampleIndex]) {
-          sampleToPersonEdges.push({
-            source: sampleNodes[sampleIndex],
-            target: personNode,
-            type: 'related'
-          })
-        }
-      })
-    }
-
+    // Calculate stats
+    const totalLinkedCases = Object.values(linkedCases).flat().length
+    
     return {
-      nodes: [caseNode, ...sampleNodes, ...personNodes],
-      edges: [...caseToSampleEdges, ...sampleToPersonEdges],
+      nodes,
+      edges,
       stats: {
         samples: sampleList.length,
         persons: personList.length,
-        dnaMatches: sampleToPersonEdges.filter((e: any) => e.type === 'dna_match').length
+        linkedCases: totalLinkedCases,
+        dnaMatches: edges.filter((e: any) => e.type === 'dna_match').length
       }
     }
   }
 
-  const graph = selectedCase ? calculateLayout() : { nodes: [], edges: [], stats: {} }
+  const graph = selectedCase ? calculateLayout() : { nodes: [], edges: [], stats: { samples: 0, persons: 0, linkedCases: 0, dnaMatches: 0 } }
 
   return (
     <div className="h-full flex">
@@ -314,7 +352,7 @@ export default function CaseGraphView() {
             <svg
               width="100%"
               height="100%"
-              viewBox="0 0 800 600"
+              viewBox="0 0 1000 700"
               style={{ transform: `scale(${zoom})` }}
               className="transition-transform"
             >
@@ -341,31 +379,54 @@ export default function CaseGraphView() {
                     <feMergeNode in="SourceGraphic"/>
                   </feMerge>
                 </filter>
+                <filter id="glow-linked" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
               </defs>
 
               {/* Edges */}
               {graph.edges.map((edge: any, i: number) => (
                 <g key={i}>
                   <line
-                    x1={edge.source.x}
-                    y1={edge.source.y}
-                    x2={edge.target.x}
-                    y2={edge.target.y}
-                    stroke={edge.type === 'dna_match' ? '#ef233c' : edge.type === 'has_sample' ? '#00d4ff' : '#415a77'}
-                    strokeWidth={edge.type === 'dna_match' ? 3 : 2}
-                    strokeDasharray={edge.type === 'related' ? '5,5' : 'none'}
-                    opacity={0.6}
+                    x1={edge.source?.x || 0}
+                    y1={edge.source?.y || 0}
+                    x2={edge.target?.x || 0}
+                    y2={edge.target?.y || 0}
+                    stroke={
+                      edge.type === 'dna_match' ? '#ef233c' : 
+                      edge.type === 'has_sample' ? '#00d4ff' : 
+                      edge.type === 'person_in_case' ? '#a855f7' :
+                      '#415a77'
+                    }
+                    strokeWidth={edge.type === 'dna_match' ? 3 : edge.type === 'person_in_case' ? 2 : 2}
+                    strokeDasharray={edge.type === 'person_in_case' ? '8,4' : 'none'}
+                    opacity={0.7}
                   />
                   {/* Edge label */}
                   {edge.type === 'dna_match' && (
                     <text
-                      x={(edge.source.x + edge.target.x) / 2}
-                      y={(edge.source.y + edge.target.y) / 2 - 5}
+                      x={(edge.source?.x + edge.target?.x) / 2}
+                      y={(edge.source?.y + edge.target?.y) / 2 - 5}
                       fill="#ef233c"
                       fontSize="10"
                       textAnchor="middle"
                     >
                       DNA ตรง
+                    </text>
+                  )}
+                  {edge.type === 'person_in_case' && (
+                    <text
+                      x={(edge.source?.x + edge.target?.x) / 2}
+                      y={(edge.source?.y + edge.target?.y) / 2 - 5}
+                      fill="#a855f7"
+                      fontSize="9"
+                      textAnchor="middle"
+                    >
+                      พบใน
                     </text>
                   )}
                 </g>
@@ -381,25 +442,25 @@ export default function CaseGraphView() {
                 >
                   {node.type === 'case' && (
                     <>
-                      {/* Case node - Rectangle */}
+                      {/* Main Case node - Rectangle with glow */}
                       <rect
-                        x="-60"
-                        y="-35"
-                        width="120"
-                        height="70"
+                        x="-70"
+                        y="-40"
+                        width="140"
+                        height="80"
                         rx="8"
-                        fill="#1b263b"
+                        fill="#0d1b2a"
                         stroke="#00d4ff"
                         strokeWidth="3"
                         filter="url(#glow-case)"
                       />
-                      <text y="-10" textAnchor="middle" fill="#00d4ff" fontSize="11" fontWeight="bold">
+                      <text y="-15" textAnchor="middle" fill="#00d4ff" fontSize="11" fontWeight="bold">
                         {node.data?.case_number || 'คดี'}
                       </text>
-                      <text y="8" textAnchor="middle" fill="#778da9" fontSize="9">
-                        {node.data?.case_type?.substring(0, 15) || ''}
+                      <text y="3" textAnchor="middle" fill="#e0e1dd" fontSize="10">
+                        {node.data?.case_type?.substring(0, 18) || ''}
                       </text>
-                      <text y="24" textAnchor="middle" fill="#778da9" fontSize="9">
+                      <text y="20" textAnchor="middle" fill="#778da9" fontSize="9">
                         {node.data?.province || ''}
                       </text>
                     </>
@@ -407,11 +468,11 @@ export default function CaseGraphView() {
 
                   {node.type === 'sample' && (
                     <>
-                      {/* Sample node - Hexagon-like */}
+                      {/* Sample node */}
                       <rect
-                        x="-45"
+                        x="-50"
                         y="-25"
-                        width="90"
+                        width="100"
                         height="50"
                         rx="6"
                         fill="#1b263b"
@@ -419,12 +480,11 @@ export default function CaseGraphView() {
                         strokeWidth="2"
                         filter="url(#glow-sample)"
                       />
-                      <Package x="-8" y="-18" className="w-4 h-4" stroke="#4895ef" />
-                      <text y="8" textAnchor="middle" fill="#4895ef" fontSize="9" fontWeight="bold">
-                        {node.data?.lab_number?.substring(0, 12) || 'วัตถุพยาน'}
+                      <text y="-5" textAnchor="middle" fill="#4895ef" fontSize="9" fontWeight="bold">
+                        {node.data?.lab_number?.substring(0, 14) || 'วัตถุพยาน'}
                       </text>
-                      <text y="20" textAnchor="middle" fill="#778da9" fontSize="8">
-                        {node.data?.sample_type?.substring(0, 12) || ''}
+                      <text y="10" textAnchor="middle" fill="#778da9" fontSize="8">
+                        {node.data?.sample_type?.substring(0, 14) || ''}
                       </text>
                     </>
                   )}
@@ -433,20 +493,20 @@ export default function CaseGraphView() {
                     <>
                       {/* Person node - Circle */}
                       <circle
-                        r="35"
+                        r="40"
                         fill="#1b263b"
                         stroke={
                           node.data?.role === 'Suspect' ? '#ef233c' :
                           node.data?.role === 'Arrested' ? '#f77f00' :
                           '#2ec4b6'
                         }
-                        strokeWidth="2"
+                        strokeWidth="3"
                         filter="url(#glow-person)"
                       />
-                      <text y="-8" textAnchor="middle" fill="#e0e1dd" fontSize="9" fontWeight="bold">
-                        {node.data?.full_name?.substring(0, 10) || 'บุคคล'}
+                      <text y="-10" textAnchor="middle" fill="#e0e1dd" fontSize="9" fontWeight="bold">
+                        {node.data?.full_name?.substring(0, 12) || 'บุคคล'}
                       </text>
-                      <text y="6" textAnchor="middle" fill="#778da9" fontSize="8">
+                      <text y="5" textAnchor="middle" fill="#778da9" fontSize="7">
                         {node.data?.id_number?.substring(0, 13) || ''}
                       </text>
                       <text y="20" textAnchor="middle" fontSize="8"
@@ -460,25 +520,57 @@ export default function CaseGraphView() {
                       </text>
                     </>
                   )}
+
+                  {node.type === 'linked_case' && (
+                    <>
+                      {/* Linked Case node - Smaller rectangle */}
+                      <rect
+                        x="-55"
+                        y="-30"
+                        width="110"
+                        height="60"
+                        rx="6"
+                        fill="#1b263b"
+                        stroke="#a855f7"
+                        strokeWidth="2"
+                        filter="url(#glow-linked)"
+                      />
+                      <text y="-10" textAnchor="middle" fill="#a855f7" fontSize="9" fontWeight="bold">
+                        {node.data?.case_number || 'คดีเชื่อมโยง'}
+                      </text>
+                      <text y="5" textAnchor="middle" fill="#e0e1dd" fontSize="8">
+                        {node.data?.case_type?.substring(0, 15) || ''}
+                      </text>
+                      <text y="18" textAnchor="middle" fill="#778da9" fontSize="8">
+                        {node.data?.province || ''}
+                      </text>
+                    </>
+                  )}
                 </g>
               ))}
 
               {/* Legend */}
-              <g transform="translate(20, 520)">
-                <rect x="0" y="0" width="200" height="70" rx="8" fill="#0d1b2a" opacity="0.9" />
-                <text x="10" y="20" fill="#e0e1dd" fontSize="10" fontWeight="bold">Legend:</text>
+              <g transform="translate(20, 580)">
+                <rect x="0" y="0" width="300" height="100" rx="8" fill="#0d1b2a" opacity="0.95" />
+                <text x="10" y="20" fill="#e0e1dd" fontSize="11" fontWeight="bold">Legend:</text>
                 
-                <rect x="10" y="30" width="20" height="12" rx="2" fill="#1b263b" stroke="#00d4ff" strokeWidth="2" />
-                <text x="35" y="40" fill="#778da9" fontSize="9">คดี (Case)</text>
+                <rect x="10" y="32" width="24" height="14" rx="3" fill="#0d1b2a" stroke="#00d4ff" strokeWidth="2" />
+                <text x="40" y="43" fill="#778da9" fontSize="9">คดีหลัก (Main Case)</text>
                 
-                <rect x="100" y="30" width="20" height="12" rx="2" fill="#1b263b" stroke="#4895ef" strokeWidth="2" />
-                <text x="125" y="40" fill="#778da9" fontSize="9">วัตถุพยาน</text>
+                <rect x="150" y="32" width="24" height="14" rx="3" fill="#1b263b" stroke="#4895ef" strokeWidth="2" />
+                <text x="180" y="43" fill="#778da9" fontSize="9">วัตถุพยาน</text>
                 
-                <circle cx="20" cy="55" r="8" fill="#1b263b" stroke="#2ec4b6" strokeWidth="2" />
-                <text x="35" y="58" fill="#778da9" fontSize="9">บุคคล</text>
+                <circle cx="22" cy="62" r="10" fill="#1b263b" stroke="#ef233c" strokeWidth="2" />
+                <text x="40" y="65" fill="#778da9" fontSize="9">บุคคล (Suspect)</text>
                 
-                <line x1="100" y1="55" x2="120" y2="55" stroke="#ef233c" strokeWidth="2" />
-                <text x="125" y="58" fill="#778da9" fontSize="9">DNA ตรง</text>
+                <rect x="150" y="52" width="24" height="14" rx="3" fill="#1b263b" stroke="#a855f7" strokeWidth="2" />
+                <text x="180" y="63" fill="#778da9" fontSize="9">คดีเชื่อมโยง</text>
+                
+                <line x1="10" y1="82" x2="30" y2="82" stroke="#ef233c" strokeWidth="2" />
+                <text x="35" y="85" fill="#778da9" fontSize="9">DNA ตรง</text>
+                
+                <line x1="110" y1="82" x2="130" y2="82" stroke="#a855f7" strokeWidth="2" strokeDasharray="5,3" />
+                <text x="135" y="85" fill="#778da9" fontSize="9">พบในคดี</text>
               </g>
             </svg>
 
@@ -510,15 +602,19 @@ export default function CaseGraphView() {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-dark-100">วัตถุพยาน:</span>
-                  <span className="font-bold text-blue-400">{graph.stats.samples || 0}</span>
+                  <span className="font-bold text-blue-400">{graph.stats.samples}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-dark-100">บุคคล:</span>
-                  <span className="font-bold text-green-400">{graph.stats.persons || 0}</span>
+                  <span className="font-bold text-green-400">{graph.stats.persons}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-dark-100">DNA Match:</span>
-                  <span className="font-bold text-red-400">{graph.stats.dnaMatches || 0}</span>
+                  <span className="font-bold text-red-400">{graph.stats.dnaMatches}</span>
+                </div>
+                <div className="flex justify-between gap-4 pt-2 border-t border-dark-100">
+                  <span className="text-dark-100">คดีเชื่อมโยง:</span>
+                  <span className="font-bold text-purple-400">{graph.stats.linkedCases}</span>
                 </div>
               </div>
             </div>
@@ -610,6 +706,49 @@ export default function CaseGraphView() {
                   </Link>
                 </div>
               )}
+            </div>
+          )}
+
+          {selectedNode.type === 'linked_case' && (
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                <FileText className="w-6 h-6 text-purple-400 mb-2" />
+                <p className="text-xs text-dark-100">คดีเชื่อมโยง</p>
+                <p className="font-mono font-semibold text-purple-400">{selectedNode.data.case_number}</p>
+              </div>
+              <div>
+                <p className="text-xs text-dark-100">ประเภทคดี</p>
+                <p className="font-medium">{selectedNode.data.case_type || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-dark-100">จังหวัด</p>
+                <p className="font-medium">{selectedNode.data.province || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-dark-100">วันที่</p>
+                <p className="font-medium">
+                  {selectedNode.data.case_date 
+                    ? new Date(selectedNode.data.case_date).toLocaleDateString('th-TH') 
+                    : '-'}
+                </p>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    setSelectedCase(selectedNode.data.case_id)
+                    setSelectedNode(null)
+                  }}
+                  className="flex-1 btn-primary text-sm"
+                >
+                  ดู Graph คดีนี้
+                </button>
+                <Link
+                  to={`/cases/${selectedNode.data.case_id}`}
+                  className="flex-1 btn-secondary text-sm text-center"
+                >
+                  รายละเอียด
+                </Link>
+              </div>
             </div>
           )}
         </div>
