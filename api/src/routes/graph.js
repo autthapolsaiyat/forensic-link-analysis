@@ -9,30 +9,27 @@ const { query } = require('../config/database');
  *   get:
  *     summary: Graph data สำหรับ Person-Centric View
  *     tags: [Graph]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Person ID หรือ ID Number
- *     responses:
- *       200:
- *         description: Graph data (nodes & edges)
  */
 router.get('/person/:id', async (req, res, next) => {
     try {
-        // Get person info
+        // Get person info - ลบ date_of_birth, address, phone ออก
         const personResult = await query(`
             SELECT 
-                p.*,
+                p.person_id,
+                p.id_number,
+                p.full_name,
+                p.first_name,
+                p.last_name,
+                p.gender,
+                p.person_type,
+                p.created_at,
+                p.updated_at,
                 COUNT(DISTINCT pcl.case_id) as case_count
             FROM persons p
             LEFT JOIN person_case_links pcl ON p.person_id = pcl.person_id
             WHERE p.person_id = @id OR p.id_number = @id
             GROUP BY p.person_id, p.id_number, p.full_name, p.first_name, p.last_name, 
-                     p.gender, p.person_type, p.date_of_birth, p.address, p.phone,
-                     p.created_at, p.updated_at
+                     p.gender, p.person_type, p.created_at, p.updated_at
         `, { id: req.params.id });
         
         if (personResult.recordset.length === 0) {
@@ -53,7 +50,7 @@ router.get('/person/:id', async (req, res, next) => {
                 c.case_date,
                 pcl.role,
                 CASE 
-                    WHEN c.case_type LIKE '%ฆ่า%' OR c.case_type LIKE '%ปล้น%' OR c.case_type LIKE '%ยาเสพติด%' 
+                    WHEN c.case_type LIKE N'%ฆ่า%' OR c.case_type LIKE N'%ปล้น%' OR c.case_type LIKE N'%ยาเสพติด%' 
                     THEN 'severe'
                     ELSE 'normal'
                 END as severity,
@@ -123,27 +120,9 @@ router.get('/person/:id', async (req, res, next) => {
  *   get:
  *     summary: Graph data สำหรับ Case-Centric View
  *     tags: [Graph]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Case ID หรือ Case Number
- *       - in: query
- *         name: depth
- *         schema:
- *           type: integer
- *           default: 1
- *         description: ระดับความลึกในการดึงข้อมูล
- *     responses:
- *       200:
- *         description: Graph data (nodes & edges)
  */
 router.get('/case/:id', async (req, res, next) => {
     try {
-        const depth = Math.min(parseInt(req.query.depth) || 1, 3);
-        
         // Get case info
         const caseResult = await query(`
             SELECT c.*
@@ -270,43 +249,14 @@ router.get('/case/:id', async (req, res, next) => {
  * @swagger
  * /graph/network:
  *   get:
- *     summary: Network Graph (ภาพรวมทั้งหมด)
+ *     summary: Network Graph
  *     tags: [Graph]
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *       - in: query
- *         name: min_strength
- *         schema:
- *           type: number
- *           default: 0.8
- *       - in: query
- *         name: province
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Network graph data
  */
 router.get('/network', async (req, res, next) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 50, 200);
         const minStrength = parseFloat(req.query.min_strength) || 0.8;
         
-        let whereConditions = ['cl.link_strength >= @min_strength'];
-        const params = { min_strength: minStrength, limit };
-        
-        if (req.query.province) {
-            whereConditions.push('(c1.province = @province OR c2.province = @province)');
-            params.province = req.query.province;
-        }
-        
-        const whereClause = whereConditions.join(' AND ');
-        
-        // Get top links
         const linksResult = await query(`
             SELECT TOP (@limit)
                 cl.link_id,
@@ -323,9 +273,9 @@ router.get('/network', async (req, res, next) => {
             FROM case_links cl
             JOIN cases c1 ON cl.case1_id = c1.case_id
             JOIN cases c2 ON cl.case2_id = c2.case_id
-            WHERE ${whereClause}
+            WHERE cl.link_strength >= @min_strength
             ORDER BY cl.link_strength DESC
-        `, params);
+        `, { limit, min_strength: minStrength });
         
         // Build unique nodes
         const nodeMap = new Map();
