@@ -18,37 +18,14 @@ interface ImportStats {
   multiCasePersons: number
 }
 
-// Flip digit component
-const FlipDigit = ({ digit, prevDigit }: { digit: string; prevDigit: string }) => {
-  const [isFlipping, setIsFlipping] = useState(false)
-
-  useEffect(() => {
-    if (digit !== prevDigit) {
-      setIsFlipping(true)
-      const timer = setTimeout(() => setIsFlipping(false), 600)
-      return () => clearTimeout(timer)
-    }
-  }, [digit, prevDigit])
-
+// Flip digit component - simplified
+const FlipDigit = ({ digit }: { digit: string }) => {
   return (
     <div className="flip-digit-container">
-      <div className={`flip-digit ${isFlipping ? 'flipping' : ''}`}>
-        <div className="digit-top">
+      <div className="flip-digit">
+        <div className="digit-display">
           <span>{digit}</span>
         </div>
-        <div className="digit-bottom">
-          <span>{digit}</span>
-        </div>
-        {isFlipping && (
-          <>
-            <div className="digit-flip-top">
-              <span>{prevDigit}</span>
-            </div>
-            <div className="digit-flip-bottom">
-              <span>{digit}</span>
-            </div>
-          </>
-        )}
       </div>
     </div>
   )
@@ -62,18 +39,8 @@ const FlipNumber = ({ value, label, icon: Icon, color, rate }: {
   color: string
   rate?: number
 }) => {
-  const [prevValue, setPrevValue] = useState(value)
-  const [displayDigits, setDisplayDigits] = useState<string[]>([])
-  const [prevDigits, setPrevDigits] = useState<string[]>([])
-
-  useEffect(() => {
-    const formatted = value.toLocaleString()
-    const prev = prevValue.toLocaleString()
-    
-    setPrevDigits(prev.split(''))
-    setDisplayDigits(formatted.split(''))
-    setPrevValue(value)
-  }, [value])
+  const formatted = value.toLocaleString()
+  const digits = formatted.split('')
 
   return (
     <div className="flip-card" style={{ '--glow-color': color } as React.CSSProperties}>
@@ -89,12 +56,8 @@ const FlipNumber = ({ value, label, icon: Icon, color, rate }: {
       </div>
       
       <div className="flip-number-display">
-        {displayDigits.map((digit, idx) => (
-          <FlipDigit 
-            key={idx} 
-            digit={digit} 
-            prevDigit={prevDigits[idx] || digit}
-          />
+        {digits.map((digit, idx) => (
+          <FlipDigit key={idx} digit={digit} />
         ))}
       </div>
     </div>
@@ -156,19 +119,19 @@ export default function LiveImportMonitor() {
   // Fetch stats from API
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch('https://forensic-link-api.azurewebsites.net/api/stats')
+      const response = await fetch('https://forensic-link-api.azurewebsites.net/api/v1/stats')
       if (response.ok) {
         const data = await response.json()
         
         setPrevStats(stats)
         
         const newStats: ImportStats = {
-          cases: data.cases || data.totalCases || 0,
-          samples: data.samples || data.totalSamples || 0,
-          persons: data.persons || data.totalPersons || 0,
-          dnaMatches: data.dnaMatches || data.totalDnaMatches || 0,
-          links: data.links || data.totalLinks || 0,
-          multiCasePersons: data.multiCasePersons || 0
+          cases: data.total_cases || data.cases || 0,
+          samples: data.total_samples || data.samples || 0,
+          persons: data.total_persons || data.persons || 0,
+          dnaMatches: data.total_dna_matches || data.dnaMatches || 0,
+          links: data.total_links || data.links || 0,
+          multiCasePersons: data.multi_case_persons || data.multiCasePersons || 0
         }
         
         // Calculate rates (per minute, assuming 5 second refresh)
@@ -394,81 +357,28 @@ export default function LiveImportMonitor() {
           position: relative;
           width: clamp(35px, 10vw, 50px);
           height: clamp(55px, 15vw, 75px);
-          font-size: clamp(30px, 8vw, 48px);
-          font-weight: 700;
-          font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
-        .digit-top, .digit-bottom {
-          position: absolute;
+        .digit-display {
           width: 100%;
-          height: 50%;
-          overflow: hidden;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
           border: 1px solid rgba(0, 240, 255, 0.3);
-        }
-
-        .digit-top {
-          top: 0;
-          border-radius: 8px 8px 0 0;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.5);
-        }
-
-        .digit-top span {
-          transform: translateY(50%);
+          border-radius: 8px;
+          font-size: clamp(28px, 8vw, 42px);
+          font-weight: 700;
+          font-family: 'SF Mono', 'Fira Code', monospace;
           color: #00f0ff;
           text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
+          animation: digitPulse 2s ease-in-out infinite;
         }
 
-        .digit-bottom {
-          bottom: 0;
-          border-radius: 0 0 8px 8px;
-          border-top: none;
-        }
-
-        .digit-bottom span {
-          transform: translateY(-50%);
-          color: #00f0ff;
-          text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
-        }
-
-        .digit-flip-top, .digit-flip-bottom {
-          position: absolute;
-          width: 100%;
-          height: 50%;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
-          backface-visibility: hidden;
-        }
-
-        .digit-flip-top {
-          top: 0;
-          border-radius: 8px 8px 0 0;
-          transform-origin: bottom;
-          animation: flipTop 0.6s ease-in-out;
-        }
-
-        .digit-flip-bottom {
-          bottom: 0;
-          border-radius: 0 0 8px 8px;
-          transform-origin: top;
-          animation: flipBottom 0.6s ease-in-out;
-        }
-
-        @keyframes flipTop {
-          0% { transform: rotateX(0deg); }
-          100% { transform: rotateX(-90deg); }
-        }
-
-        @keyframes flipBottom {
-          0% { transform: rotateX(90deg); }
-          100% { transform: rotateX(0deg); }
+        @keyframes digitPulse {
+          0%, 100% { text-shadow: 0 0 20px rgba(0, 240, 255, 0.8); }
+          50% { text-shadow: 0 0 30px rgba(0, 240, 255, 1), 0 0 40px rgba(0, 240, 255, 0.5); }
         }
 
         .progress-section {
