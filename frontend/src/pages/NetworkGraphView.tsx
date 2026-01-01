@@ -3,13 +3,19 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
-  Search, Box, Grid3X3, ZoomIn, ZoomOut, RotateCcw,
-  Download, Play, Pause, Filter,
-  User, FileText, Package, AlertTriangle,
-  Users, Loader2, ChevronRight, Eye, EyeOff,
-  Target, Sparkles, Network, Shield
+  Search, ZoomIn, ZoomOut, RotateCcw,
+  Download, Play, Pause,
+  AlertTriangle,
+  Users, Loader2, Eye,
+  Target, Network, Shield
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
+import {
+  CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon,
+  DNAIcon, SampleIcon, FingerprintIcon, DrugIcon,
+  WeaponIcon, LocationIcon, VehicleIcon, PhoneIcon,
+  MoneyIcon, OrganizationIcon, VictimIcon, DocumentIcon
+} from '../components/ForensicIcons'
 
 // Types
 interface GraphNode {
@@ -797,39 +803,74 @@ export default function NetworkGraphView() {
 
               {/* Legend */}
               <div className="card bg-dark-300 p-3">
-                <p className="text-xs text-dark-100 mb-2">Legend</p>
-                <div className="space-y-1.5 text-xs">
+                <p className="text-xs text-dark-100 mb-2">Legend - Entity Types</p>
+                <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="w-4 h-3 rounded bg-[#00d4ff]"></span>
+                    <CaseIcon size={18} color="#00d4ff" />
                     <span>คดีหลัก</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-4 h-3 rounded bg-[#a855f7]"></span>
-                    <span>คดีเชื่อมโยง (Level 2)</span>
+                    <CaseIcon size={18} color="#a855f7" />
+                    <span>คดีเชื่อมโยง</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-4 h-3 rounded bg-[#8b5cf6]"></span>
-                    <span>คดีเชื่อมโยง (Level 3)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#ef233c]"></span>
+                    <SuspectIcon size={18} color="#ef233c" />
                     <span>Suspect</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#f77f00]"></span>
+                    <ArrestedIcon size={18} color="#f77f00" />
                     <span>Arrested</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#2ec4b6]"></span>
+                    <ReferenceIcon size={18} color="#2ec4b6" />
                     <span>Reference</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rotate-45 bg-[#4895ef]"></span>
+                    <DNAIcon size={18} color="#4895ef" />
+                    <span>DNA Evidence</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <SampleIcon size={18} color="#4895ef" />
                     <span>วัตถุพยาน</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-4 h-3 rounded border-2 border-dashed border-[#6366f1] bg-[#6366f1]/30"></span>
-                    <span>Cluster (คลิกขยาย)</span>
+                    <FingerprintIcon size={18} color="#a855f7" />
+                    <span>Fingerprint</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DrugIcon size={18} color="#f72585" />
+                    <span>Drug</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* More Icons Legend */}
+              <div className="card bg-dark-300 p-3">
+                <p className="text-xs text-dark-100 mb-2">More Types</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <WeaponIcon size={16} color="#6c757d" />
+                    <span>Weapon</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <VehicleIcon size={16} color="#495057" />
+                    <span>Vehicle</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <PhoneIcon size={16} color="#ffc300" />
+                    <span>Phone</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MoneyIcon size={16} color="#ffd60a" />
+                    <span>Money</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <LocationIcon size={16} color="#8338ec" />
+                    <span>Location</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <OrganizationIcon size={16} color="#7209b7" />
+                    <span>Organization</span>
                   </div>
                 </div>
               </div>
@@ -955,15 +996,23 @@ export default function NetworkGraphView() {
               selectedNode.type === 'cluster' ? 'bg-purple-500/10 border-purple-500/30' :
               'bg-blue-500/10 border-blue-500/30'
             }`}>
-              {selectedNode.type === 'case' ? (
-                <FileText className="w-6 h-6 text-primary-500 mb-2" />
-              ) : selectedNode.type === 'person' ? (
-                <User className="w-6 h-6 text-red-400 mb-2" />
-              ) : selectedNode.type === 'cluster' ? (
-                <Users className="w-6 h-6 text-purple-400 mb-2" />
-              ) : (
-                <Package className="w-6 h-6 text-blue-400 mb-2" />
-              )}
+              <div className="mb-2">
+                {selectedNode.type === 'case' ? (
+                  <CaseIcon size={28} color="#00d4ff" />
+                ) : selectedNode.type === 'person' ? (
+                  (selectedNode.data?.role || selectedNode.data?.person_type) === 'Suspect' ? (
+                    <SuspectIcon size={28} color="#ef233c" />
+                  ) : (selectedNode.data?.role || selectedNode.data?.person_type) === 'Arrested' ? (
+                    <ArrestedIcon size={28} color="#f77f00" />
+                  ) : (
+                    <ReferenceIcon size={28} color="#2ec4b6" />
+                  )
+                ) : selectedNode.type === 'cluster' ? (
+                  <OrganizationIcon size={28} color="#a855f7" />
+                ) : (
+                  <SampleIcon size={28} color="#4895ef" />
+                )}
+              </div>
               <p className="font-semibold">{selectedNode.label}</p>
               <p className="text-xs text-dark-100 capitalize">{selectedNode.type}</p>
               {selectedNode.level !== undefined && (
