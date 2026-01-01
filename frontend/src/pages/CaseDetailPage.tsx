@@ -5,9 +5,27 @@ import { useQuery } from '@tanstack/react-query'
 import {
   FileText, Users, Package, MapPin, Image, FlaskConical,
   Clock, ChevronLeft, Link2, GitBranch, Download, Printer,
-  Calendar, Building, User, Phone, AlertTriangle
+  Building, User, AlertTriangle
 } from 'lucide-react'
 import { casesApi } from '../services/api'
+
+// Helper function to generate FIDS No.
+const generateFidsNo = (caseNumber: string, sampleCount: number = 0): string => {
+  if (!caseNumber) return '-'
+  
+  const parts = caseNumber.split('-')
+  if (parts.length < 3) return caseNumber
+  
+  const center = parts[0]
+  let yearPart = parts[1]
+  const runningNum = parts[2]
+  
+  const year = yearPart.replace(/[^0-9]/g, '').substring(0, 2)
+  const sampleStr = String(sampleCount).padStart(4, '0')
+  const runningStr = runningNum.padStart(5, '0')
+  
+  return `${center}-DNA-${year}-${runningStr}-${sampleStr}`
+}
 
 type TabType = 'details' | 'persons' | 'evidence' | 'map' | 'photos' | 'results' | 'status'
 
@@ -71,7 +89,7 @@ export default function CaseDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold">
-                  กลุ่มงานตรวจชีววิทยาและดีเอ็นเอ เลขคดี : {caseInfo?.case_id?.replace('PFSC10_', '10-DNA-')}
+                  กลุ่มงานตรวจชีววิทยาและดีเอ็นเอ เลขคดี : {generateFidsNo(caseInfo?.case_number || '', samples?.length || 0)}
                 </h1>
                 {links && links.length > 0 && (
                   <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-bold flex items-center gap-1">
@@ -107,12 +125,12 @@ export default function CaseDetailPage() {
         {/* Status Indicators */}
         <div className="flex items-center gap-4 mt-4">
           <div className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${caseInfo?.case_closed ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`}></span>
-            <span className="text-sm">{caseInfo?.case_closed ? 'ปิดคดี' : 'ดำเนินการ'}</span>
+            <span className={`w-3 h-3 rounded-full ${(caseInfo as any)?.case_closed ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`}></span>
+            <span className="text-sm">{(caseInfo as any)?.case_closed ? 'ปิดคดี' : 'ดำเนินการ'}</span>
           </div>
           <span className="text-dark-100">|</span>
           <span className="text-sm text-dark-100">
-            วันที่รับ: {caseInfo?.received_date ? new Date(caseInfo.received_date).toLocaleDateString('th-TH') : '-'}
+            วันที่รับ: {(caseInfo as any)?.received_date ? new Date((caseInfo as any).received_date).toLocaleDateString('th-TH') : '-'}
           </span>
         </div>
       </div>
@@ -146,7 +164,7 @@ export default function CaseDetailPage() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
         {activeTab === 'details' && (
-          <DetailsTab caseData={caseInfo} links={links} />
+          <DetailsTab caseData={caseInfo} links={links} sampleCount={samples?.length || 0} />
         )}
         {activeTab === 'persons' && (
           <PersonsTab persons={persons || []} />
@@ -166,7 +184,21 @@ export default function CaseDetailPage() {
 }
 
 // Details Tab
-function DetailsTab({ caseData, links }: { caseData: any; links: any[] }) {
+function DetailsTab({ caseData, links, sampleCount }: { caseData: any; links: any[]; sampleCount: number }) {
+  // Helper function for FIDS No
+  const getFidsNo = (caseNumber: string, samples: number): string => {
+    if (!caseNumber) return '-'
+    const parts = caseNumber.split('-')
+    if (parts.length < 3) return caseNumber
+    const center = parts[0]
+    const yearPart = parts[1]
+    const runningNum = parts[2]
+    const year = yearPart.replace(/[^0-9]/g, '').substring(0, 2)
+    const sampleStr = String(samples).padStart(4, '0')
+    const runningStr = runningNum.padStart(5, '0')
+    return `${center}-DNA-${year}-${runningStr}-${sampleStr}`
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Info */}
@@ -177,7 +209,7 @@ function DetailsTab({ caseData, links }: { caseData: any; links: any[] }) {
             ข้อมูลคดี
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <InfoField label="FIDS No." value={caseData?.case_id?.replace('PFSC10_', '10-DNA-')} />
+            <InfoField label="FIDS No." value={getFidsNo(caseData?.case_number, sampleCount)} />
             <InfoField label="Case No." value={caseData?.case_number} />
             <InfoField label="เลขที่หนังสือนำส่ง" value={caseData?.document_number} />
             <InfoField label="วันที่หนังสือนำส่ง" value={caseData?.document_date ? new Date(caseData.document_date).toLocaleDateString('th-TH') : '-'} />

@@ -1,46 +1,38 @@
 // src/pages/CaseListPage.tsx
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { 
-  Search, Filter, FileText, MapPin, Calendar, 
-  ChevronLeft, ChevronRight, Link2, AlertTriangle,
+  Search, FileText, MapPin,
+  ChevronLeft, ChevronRight, Link2,
   Eye, GitBranch, Download, SlidersHorizontal,
-  CheckCircle, Clock, XCircle, Loader2
+  Loader2
 } from 'lucide-react'
 import { casesApi } from '../services/api'
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-    'มีการตรวจเก็บ': { bg: 'bg-gray-500/20', text: 'text-gray-400', icon: <Clock className="w-3 h-3" /> },
-    'ส่งข้อมูลสำเร็จ': { bg: 'bg-orange-500/20', text: 'text-orange-400', icon: <CheckCircle className="w-3 h-3" /> },
-    'ส่งข้อมูลเข้ากลุ่มงานแล้ว': { bg: 'bg-yellow-500/20', text: 'text-yellow-400', icon: <Loader2 className="w-3 h-3" /> },
-    'ตรวจพิสูจน์เสร็จสิ้น': { bg: 'bg-green-500/20', text: 'text-green-400', icon: <CheckCircle className="w-3 h-3" /> },
-    'อยู่ระหว่างการดำเนินการตรวจพิสูจน์': { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-    'ส่งข้อมูลไม่สำเร็จ': { bg: 'bg-red-500/20', text: 'text-red-400', icon: <XCircle className="w-3 h-3" /> },
-    'พบความเชื่อมโยง': { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: <Link2 className="w-3 h-3" /> },
-  }
+// Helper function to generate FIDS No.
+const generateFidsNo = (caseNumber: string, sampleCount: number = 0): string => {
+  // case_number format: "10-68-21168" or "10-67RE-30473"
+  if (!caseNumber) return '-'
   
-  const { bg, text, icon } = config[status] || config['มีการตรวจเก็บ']
+  // Extract parts from case number
+  const parts = caseNumber.split('-')
+  if (parts.length < 3) return caseNumber
   
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${bg} ${text}`}>
-      {icon}
-      {status}
-    </span>
-  )
-}
-
-// Link indicator
-const LinkIndicator = ({ hasLink, linkCount }: { hasLink: boolean; linkCount: number }) => {
-  if (!hasLink) return null
-  return (
-    <div className="flex items-center gap-1 text-purple-400">
-      <Link2 className="w-4 h-4" />
-      <span className="text-xs font-bold">{linkCount}</span>
-    </div>
-  )
+  const center = parts[0] // "10"
+  let yearPart = parts[1] // "68" or "67RE"
+  const runningNum = parts[2] // "21168"
+  
+  // Extract year (first 2 digits)
+  const year = yearPart.replace(/[^0-9]/g, '').substring(0, 2)
+  
+  // Format sample count (4 digits)
+  const sampleStr = String(sampleCount).padStart(4, '0')
+  
+  // Format running number (5 digits)
+  const runningStr = runningNum.padStart(5, '0')
+  
+  return `${center}-DNA-${year}-${runningStr}-${sampleStr}`
 }
 
 export default function CaseListPage() {
@@ -269,7 +261,7 @@ export default function CaseListPage() {
                   >
                     <td className="p-4">
                       <span className="font-mono text-sm text-primary-500">
-                        {caseItem.case_id?.replace('PFSC10_', '10-') || '-'}
+                        {generateFidsNo(caseItem.case_number, caseItem.sample_count || 0)}
                       </span>
                     </td>
                     <td className="p-4">

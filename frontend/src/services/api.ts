@@ -33,18 +33,6 @@ export interface Case {
   analyst_name?: string
   sample_count?: number
   link_count?: number
-  received_date?: string
-  document_number?: string
-  document_date?: string
-  scene_address?: string
-  case_closed?: boolean
-  accuser_name?: string
-  accused_name?: string
-  suspect_given_name?: string
-  victim_given_name?: string
-  sender_name?: string
-  agent_name?: string
-  agent_tel?: string
 }
 
 export interface Person {
@@ -56,8 +44,6 @@ export interface Person {
   person_type: string
   case_count: number
   case_numbers?: string
-  role?: string
-  total_cases?: number
 }
 
 export interface Link {
@@ -79,7 +65,7 @@ export interface GraphNode {
   type: 'person' | 'case'
   label: string
   isCenter?: boolean
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
 
 export interface GraphEdge {
@@ -125,7 +111,7 @@ export const statsApi = {
 }
 
 export const casesApi = {
-  getAll: async (params?: { page?: number; limit?: number; province?: string; case_type?: string; from_date?: string; to_date?: string }) => {
+  getAll: async (params?: { page?: number; limit?: number; province?: string }) => {
     const { data } = await api.get('/cases', { params })
     return data
   },
