@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Search, Box, Grid3X3, ZoomIn, ZoomOut, RotateCcw,
-  Download, Play, Pause, Layers, Target
+  Download, Play, Pause, Layers, Target, FileText, User
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
 import {

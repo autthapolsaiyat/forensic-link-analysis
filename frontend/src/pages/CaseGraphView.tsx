@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import {
-  Search, ZoomIn, ZoomOut, RotateCcw, ArrowRight
+  Search, ZoomIn, ZoomOut, RotateCcw, ArrowRight, FileText
 } from 'lucide-react'
 import { casesApi, searchApi, personsApi } from '../services/api'
 import {

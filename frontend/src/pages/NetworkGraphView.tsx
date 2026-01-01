@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Search, ZoomIn, ZoomOut, RotateCcw,
-  Download, Play, Pause,
+  Download, Play, Pause, FileText, User,
   AlertTriangle,
   Users, Loader2, Eye,
   Target, Network, Shield
