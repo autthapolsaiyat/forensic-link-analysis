@@ -395,7 +395,7 @@ export default function JarvisNetworkPage() {
                   className="w-full text-left p-3 holo-card hover:border-cyan-400/50 transition-all group"
                 >
                   <div className="flex items-center gap-2">
-                    <CaseIcon size={18} color="#00f0ff" />
+                    <FileText size={18} className="text-cyan-400" />
                     <div>
                       <p className="font-mono text-sm text-cyan-300 group-hover:neon-text">{c.case_number}</p>
                       <p className="text-xs text-cyan-400/50">{c.case_type}</p>
@@ -410,9 +410,9 @@ export default function JarvisNetworkPage() {
                   className="w-full text-left p-3 holo-card hover:border-cyan-400/50 transition-all group"
                 >
                   <div className="flex items-center gap-2">
-                    {p.role === 'Suspect' ? <SuspectIcon size={18} color="#ff2d55" /> :
-                     p.role === 'Arrested' ? <ArrestedIcon size={18} color="#ff6b35" /> :
-                     <ReferenceIcon size={18} color="#39ff14" />}
+                    {p.role === 'Suspect' ? <UserX size={18} className="text-red-500" /> :
+                     p.role === 'Arrested' ? <UserMinus size={18} className="text-orange-500" /> :
+                     <User size={18} className="text-green-400" />}
                     <div>
                       <p className="text-sm text-cyan-100 group-hover:text-cyan-300">{p.full_name}</p>
                       <p className="text-xs text-cyan-400/50 font-mono">{p.id_number}</p>
@@ -632,13 +632,13 @@ export default function JarvisNetworkPage() {
           <div className="holo-card p-4 mb-4">
             <div className="flex items-center gap-3 mb-3">
               {selectedNode.type === 'case' ? (
-                <CaseIcon size={32} color={selectedNode.isCenter ? '#00f0ff' : '#a855f7'} />
+                <FileText size={32} className={selectedNode.isCenter ? 'text-cyan-400' : 'text-purple-400'} style={{ filter: `drop-shadow(0 0 6px ${selectedNode.isCenter ? '#00f0ff' : '#a855f7'})` }} />
               ) : selectedNode.type === 'person' ? (
-                selectedNode.role === 'Suspect' ? <SuspectIcon size={32} color="#ff2d55" /> :
-                selectedNode.role === 'Arrested' ? <ArrestedIcon size={32} color="#ff6b35" /> :
-                <ReferenceIcon size={32} color="#39ff14" />
+                selectedNode.role === 'Suspect' ? <UserX size={32} className="text-red-500" style={{ filter: 'drop-shadow(0 0 6px #ff2d55)' }} /> :
+                selectedNode.role === 'Arrested' ? <UserMinus size={32} className="text-orange-500" style={{ filter: 'drop-shadow(0 0 6px #ff6b35)' }} /> :
+                <User size={32} className="text-green-400" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
               ) : (
-                <SampleIcon size={32} color="#4895ef" />
+                <Dna size={32} className="text-blue-400" style={{ filter: 'drop-shadow(0 0 6px #4895ef)' }} />
               )}
               <div>
                 <p className="font-semibold text-cyan-100">{selectedNode.label}</p>
