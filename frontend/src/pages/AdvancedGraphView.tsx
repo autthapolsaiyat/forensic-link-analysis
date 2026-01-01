@@ -11,6 +11,7 @@ import {
   CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon,
   SampleIcon, DNAIcon
 } from '../components/ForensicIcons'
+import { getNodeIcon } from '../utils/graphIcons'
 
 // Types
 interface GraphNode {
@@ -311,7 +312,9 @@ export default function AdvancedGraphView() {
               label: n.label,
               type: n.type,
               color: n.color,
-              nodeData: n.data
+              nodeData: n.data,
+              role: n.data?.role || n.data?.person_type,
+              iconUrl: getNodeIcon(n.type, n.data?.role || n.data?.person_type, n.color)
             }
           })),
           ...graphData.edges.map((e, i) => ({
@@ -329,31 +332,31 @@ export default function AdvancedGraphView() {
           {
             selector: 'node',
             style: {
-              'background-color': 'data(color)',
+              'background-color': '#1b263b',
+              'background-image': 'data(iconUrl)',
+              'background-fit': 'contain',
+              'background-clip': 'none',
               'label': 'data(label)',
               'color': '#e0e1dd',
               'text-valign': 'bottom',
               'text-halign': 'center',
               'font-size': '10px',
-              'text-margin-y': '5px',
-              'width': 40,
-              'height': 40,
-              'border-width': 3,
-              'border-color': 'data(color)'
+              'text-margin-y': '8px',
+              'width': 50,
+              'height': 50,
+              'border-width': 0
             }
           },
           {
             selector: 'node[type="case"]',
             style: {
-              'shape': 'round-rectangle',
-              'width': 60,
-              'height': 40
+              'width': 55,
+              'height': 45
             }
           },
           {
             selector: 'node[type="person"]',
             style: {
-              'shape': 'ellipse',
               'width': 50,
               'height': 50
             }
@@ -361,26 +364,22 @@ export default function AdvancedGraphView() {
           {
             selector: 'node[type="sample"]',
             style: {
-              'shape': 'diamond',
-              'width': 35,
-              'height': 35
+              'width': 40,
+              'height': 40
             }
           },
           {
             selector: 'node[type="linked_case"]',
             style: {
-              'shape': 'round-rectangle',
-              'width': 55,
-              'height': 35,
-              'border-style': 'dashed'
+              'width': 50,
+              'height': 40
             }
           },
           {
             selector: 'node:selected',
             style: {
-              'border-width': 5,
-              'border-color': '#ffffff',
-              'background-opacity': 1
+              'border-width': 3,
+              'border-color': '#ffd700'
             }
           },
           {

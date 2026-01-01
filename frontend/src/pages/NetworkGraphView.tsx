@@ -16,6 +16,7 @@ import {
   WeaponIcon, LocationIcon, VehicleIcon, PhoneIcon,
   MoneyIcon, OrganizationIcon, VictimIcon, DocumentIcon
 } from '../components/ForensicIcons'
+import { getNodeIcon } from '../utils/graphIcons'
 
 // Types
 interface GraphNode {
@@ -442,7 +443,9 @@ export default function NetworkGraphView() {
               level: n.level,
               isCenter: n.isCenter,
               nodeData: n.data,
-              clusterInfo: n.clusterInfo
+              clusterInfo: n.clusterInfo,
+              role: n.data?.role || n.data?.person_type,
+              iconUrl: getNodeIcon(n.type, n.data?.role || n.data?.person_type, n.color)
             }
           })),
           ...filteredEdges.map((e, i) => ({
@@ -460,71 +463,67 @@ export default function NetworkGraphView() {
           {
             selector: 'node',
             style: {
-              'background-color': 'data(color)',
+              'background-color': '#1b263b',
+              'background-image': 'data(iconUrl)',
+              'background-fit': 'contain',
+              'background-clip': 'none',
               'label': 'data(label)',
               'color': '#e0e1dd',
               'text-valign': 'bottom',
               'text-halign': 'center',
               'font-size': '9px',
-              'text-margin-y': '5px',
-              'width': 'data(size)',
-              'height': 'data(size)',
-              'border-width': 2,
-              'border-color': 'data(color)',
-              'text-max-width': '80px',
+              'text-margin-y': '8px',
+              'width': 45,
+              'height': 45,
+              'border-width': 0,
+              'text-max-width': '90px',
               'text-wrap': 'ellipsis'
             }
           },
           {
             selector: 'node[type="case"]',
             style: {
-              'shape': 'round-rectangle',
-              'width': 50,
-              'height': 35
+              'width': 55,
+              'height': 45
             }
           },
           {
             selector: 'node[type="person"]',
             style: {
-              'shape': 'ellipse'
+              'width': 50,
+              'height': 50
             }
           },
           {
             selector: 'node[type="sample"]',
             style: {
-              'shape': 'diamond',
-              'width': 25,
-              'height': 25
+              'width': 40,
+              'height': 40
             }
           },
           {
             selector: 'node[type="cluster"]',
             style: {
-              'shape': 'round-rectangle',
-              'width': 60,
-              'height': 40,
-              'border-style': 'dashed',
-              'border-width': 3,
-              'font-weight': 'bold'
+              'width': 55,
+              'height': 55
             }
           },
           {
             selector: 'node[?isCenter]',
             style: {
-              'border-width': 4,
-              'border-color': '#ffffff',
-              'width': 60,
-              'height': 45,
+              'width': 70,
+              'height': 60,
               'font-size': '11px',
-              'font-weight': 'bold'
+              'font-weight': 'bold',
+              'border-width': 3,
+              'border-color': '#ffffff'
             }
           },
           {
             selector: 'node:selected',
             style: {
-              'border-width': 4,
-              'border-color': '#ffd700',
-              'background-opacity': 1
+              'border-width': 3,
+              'border-color': '#ffd700'
             }
           },
           {
