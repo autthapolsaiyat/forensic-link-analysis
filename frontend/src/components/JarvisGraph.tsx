@@ -482,22 +482,42 @@ export default function JarvisGraph({
             .attr('r', 4)
             .attr('fill', COLORS.orange)
         }
-      } else if (d.type === 'sample') {
-        // Test tube / DNA icon
+      } else if (d.type === 'sample' || d.type === 'dna') {
+        // DNA Double Helix icon
+        const h = size * 0.9
+        
+        // Left strand
         group.append('path')
-          .attr('d', `M${-size * 0.3} ${-size * 0.8} L${-size * 0.3} ${size * 0.3} Q${-size * 0.3} ${size * 0.8} 0 ${size * 0.8} Q${size * 0.3} ${size * 0.8} ${size * 0.3} ${size * 0.3} L${size * 0.3} ${-size * 0.8}`)
+          .attr('d', `M${-size * 0.4} ${-h} 
+                      Q${size * 0.3} ${-h * 0.5} ${-size * 0.4} 0 
+                      Q${size * 0.3} ${h * 0.5} ${-size * 0.4} ${h}`)
           .attr('fill', 'none')
           .attr('stroke', color)
-          .attr('stroke-width', 1.5)
+          .attr('stroke-width', 2)
+          .attr('filter', 'url(#glow)')
         
-        group.append('line')
-          .attr('x1', -size * 0.3)
-          .attr('y1', 0)
-          .attr('x2', size * 0.3)
-          .attr('y2', 0)
+        // Right strand
+        group.append('path')
+          .attr('d', `M${size * 0.4} ${-h} 
+                      Q${-size * 0.3} ${-h * 0.5} ${size * 0.4} 0 
+                      Q${-size * 0.3} ${h * 0.5} ${size * 0.4} ${h}`)
+          .attr('fill', 'none')
           .attr('stroke', color)
-          .attr('stroke-opacity', 0.5)
-          .attr('stroke-width', 1)
+          .attr('stroke-width', 2)
+          .attr('filter', 'url(#glow)')
+        
+        // Connecting bars (base pairs)
+        const bars = [-0.6, -0.2, 0.2, 0.6]
+        bars.forEach(y => {
+          group.append('line')
+            .attr('x1', -size * 0.25)
+            .attr('y1', h * y)
+            .attr('x2', size * 0.25)
+            .attr('y2', h * y)
+            .attr('stroke', color)
+            .attr('stroke-opacity', 0.6)
+            .attr('stroke-width', 1.5)
+        })
       }
     })
 

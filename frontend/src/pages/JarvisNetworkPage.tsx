@@ -142,7 +142,7 @@ export default function JarvisNetworkPage() {
           }
         }
 
-        // Get samples
+        // Get samples and DNA
         const samples = await casesApi.getSamples(entityId)
         for (const sample of (samples || []).slice(0, 5)) {
           const sampleNode: GraphNode = {
@@ -158,6 +158,44 @@ export default function JarvisNetworkPage() {
             target: sampleNode.id,
             type: 'has_sample'
           })
+          
+          // Add DNA node if sample has DNA profile
+          if (sample.has_dna_profile) {
+            const dnaNode: GraphNode = {
+              id: `dna-${sample.sample_id}`,
+              type: 'sample', // Use sample type for DNA helix icon
+              label: 'DNA Profile',
+              level: 1,
+              data: { ...sample, isDNA: true }
+            }
+            nodes.push(dnaNode)
+            edges.push({
+              source: sampleNode.id,
+              target: dnaNode.id,
+              type: 'has_dna'
+            })
+          }
+        }
+        
+        // Get DNA matches (linked cases through DNA)
+        try {
+          const dnaMatches = await casesApi.getDnaMatches(entityId)
+          for (const match of (dnaMatches || []).slice(0, 5)) {
+            const linkedCaseId = match.matched_case_id || match.case_id_2
+            if (linkedCaseId && linkedCaseId !== entityId && !visitedCases.has(linkedCaseId)) {
+              const linkedCase = await addCaseNode(linkedCaseId, 1)
+              if (linkedCase) {
+                edges.push({
+                  source: centerCase.id,
+                  target: linkedCase.id,
+                  type: 'dna_match',
+                  label: 'DNA Match'
+                })
+              }
+            }
+          }
+        } catch (e) {
+          // No DNA matches
         }
       } else if (entityType === 'person') {
         // Start from person
@@ -485,8 +523,25 @@ export default function JarvisNetworkPage() {
               <span className="text-cyan-100/80">Reference</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
+              <DNAIcon size={20} color="#4895ef" />
+              <span className="text-cyan-100/80">DNA Evidence</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
               <SampleIcon size={20} color="#4895ef" />
               <span className="text-cyan-100/80">วัตถุพยาน</span>
+            </div>
+          </div>
+          
+          {/* Connection Types */}
+          <p className="text-xs text-cyan-400/50 mt-4 mb-2">Connection Types</p>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-red-500" />
+              <span className="text-cyan-100/60">DNA Match</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-cyan-400 opacity-50" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #00f0ff, #00f0ff 4px, transparent 4px, transparent 8px)' }} />
+              <span className="text-cyan-100/60">Found In</span>
             </div>
           </div>
         </div>
