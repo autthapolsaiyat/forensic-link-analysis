@@ -17,9 +17,9 @@ import {
 const navItems = [
   { to: '/', icon: Activity, label: 'Dashboard', description: 'ภาพรวม & Insights' },
   { to: '/cases', icon: FileText, label: 'รายการคดี', description: 'ค้นหาและจัดการคดี' },
+  { to: '/advanced-graph', icon: Layers, label: '3D Graph', description: '2D/3D Interactive' },
   { to: '/graph', icon: GitBranch, label: 'Person Graph', description: 'บุคคล → คดี' },
-  { to: '/case-graph', icon: Layers, label: 'Case Graph', description: 'คดี → วัตถุพยาน → DNA' },
-  { to: '/workspace', icon: Search, label: 'Workspace', description: 'เปรียบเทียบคดี' },
+  { to: '/case-graph', icon: Search, label: 'Case Graph', description: 'คดี → วัตถุพยาน → DNA' },
   { to: '/persons', icon: Users, label: 'บุคคลหลายคดี', description: 'วิเคราะห์บุคคล' },
   { to: '/links', icon: Link2, label: 'Case Links', description: 'รายการเชื่อมโยง' },
 ]
