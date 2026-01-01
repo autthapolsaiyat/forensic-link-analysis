@@ -1,0 +1,54 @@
+# .github/workflows/deploy-api.yml
+name: Deploy API to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: forensic-link-api
+  AZURE_WEBAPP_PACKAGE_PATH: './api'
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: 🧪 Run tests
+        working-directory: ./api
+        run: npm test --if-present
+
+      - name: 🔐 Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 🚀 Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: 🏁 Deployment complete
+        run: |
+          echo "✅ API deployed to https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+          echo "📚 API Docs: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/api-docs"
