@@ -6,6 +6,7 @@ import GraphView from './pages/GraphView'
 import CaseGraphView from './pages/CaseGraphView'
 import AdvancedGraphView from './pages/AdvancedGraphView'
 import NetworkGraphView from './pages/NetworkGraphView'
+import JarvisNetworkPage from './pages/JarvisNetworkPage'
 import IconGallery from './pages/IconGallery'
 import PersonsPage from './pages/PersonsPage'
 import LinksPage from './pages/LinksPage'
@@ -26,7 +27,8 @@ function App() {
         <Route path="graph/case/:id" element={<CaseGraphView />} />
         <Route path="case-graph" element={<CaseGraphView />} />
         <Route path="advanced-graph" element={<AdvancedGraphView />} />
-        <Route path="network-graph" element={<NetworkGraphView />} />
+        <Route path="network-graph" element={<JarvisNetworkPage />} />
+        <Route path="network-graph-old" element={<NetworkGraphView />} />
         <Route path="icons" element={<IconGallery />} />
         <Route path="persons" element={<PersonsPage />} />
         <Route path="links" element={<LinksPage />} />

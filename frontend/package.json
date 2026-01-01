@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.17.0",
+    "@types/d3": "^7.4.3",
     "3d-force-graph": "^1.73.0",
     "axios": "^1.6.5",
     "cytoscape": "^3.28.1",
     "cytoscape-fcose": "^2.2.0",
+    "d3": "^7.8.5",
     "lucide-react": "^0.309.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
