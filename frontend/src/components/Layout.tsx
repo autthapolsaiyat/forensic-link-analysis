@@ -17,11 +17,11 @@ import {
 const navItems = [
   { to: '/', icon: Activity, label: 'Dashboard', description: 'ภาพรวม & Insights' },
   { to: '/cases', icon: FileText, label: 'รายการคดี', description: 'ค้นหาและจัดการคดี' },
-  { to: '/graph', icon: GitBranch, label: 'Graph View', description: 'แสดงความเชื่อมโยง' },
-  { to: '/workspace', icon: Layers, label: 'Workspace', description: 'เปรียบเทียบคดี' },
+  { to: '/graph', icon: GitBranch, label: 'Person Graph', description: 'บุคคล → คดี' },
+  { to: '/case-graph', icon: Layers, label: 'Case Graph', description: 'คดี → วัตถุพยาน → DNA' },
+  { to: '/workspace', icon: Search, label: 'Workspace', description: 'เปรียบเทียบคดี' },
   { to: '/persons', icon: Users, label: 'บุคคลหลายคดี', description: 'วิเคราะห์บุคคล' },
   { to: '/links', icon: Link2, label: 'Case Links', description: 'รายการเชื่อมโยง' },
-  { to: '/search', icon: Search, label: 'ค้นหา', description: 'ค้นหาขั้นสูง' },
 ]
 
 export default function Layout() {

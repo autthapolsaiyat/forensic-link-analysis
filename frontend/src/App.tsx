@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import SmartDashboard from './pages/SmartDashboard'
 import GraphView from './pages/GraphView'
+import CaseGraphView from './pages/CaseGraphView'
 import PersonsPage from './pages/PersonsPage'
 import LinksPage from './pages/LinksPage'
 import SearchPage from './pages/SearchPage'
@@ -19,7 +20,8 @@ function App() {
         <Route path="cases/:id" element={<CaseDetailPage />} />
         <Route path="graph" element={<GraphView />} />
         <Route path="graph/person/:id" element={<GraphView />} />
-        <Route path="graph/case/:id" element={<GraphView />} />
+        <Route path="graph/case/:id" element={<CaseGraphView />} />
+        <Route path="case-graph" element={<CaseGraphView />} />
         <Route path="persons" element={<PersonsPage />} />
         <Route path="links" element={<LinksPage />} />
         <Route path="search" element={<SearchPage />} />
