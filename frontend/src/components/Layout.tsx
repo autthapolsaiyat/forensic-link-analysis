@@ -17,8 +17,8 @@ import {
 const navItems = [
   { to: '/', icon: Activity, label: 'Dashboard', description: 'ภาพรวม & Insights' },
   { to: '/cases', icon: FileText, label: 'รายการคดี', description: 'ค้นหาและจัดการคดี' },
-  { to: '/advanced-graph', icon: Layers, label: '3D Graph', description: '2D/3D Interactive' },
-  { to: '/graph', icon: GitBranch, label: 'Person Graph', description: 'บุคคล → คดี' },
+  { to: '/network-graph', icon: Layers, label: 'Network Investigation', description: 'สืบค้นขบวนการ 3 ชั้น' },
+  { to: '/advanced-graph', icon: GitBranch, label: '2D/3D Graph', description: 'Interactive Graph' },
   { to: '/case-graph', icon: Search, label: 'Case Graph', description: 'คดี → วัตถุพยาน → DNA' },
   { to: '/persons', icon: Users, label: 'บุคคลหลายคดี', description: 'วิเคราะห์บุคคล' },
   { to: '/links', icon: Link2, label: 'Case Links', description: 'รายการเชื่อมโยง' },

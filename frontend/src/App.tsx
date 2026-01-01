@@ -5,6 +5,7 @@ import SmartDashboard from './pages/SmartDashboard'
 import GraphView from './pages/GraphView'
 import CaseGraphView from './pages/CaseGraphView'
 import AdvancedGraphView from './pages/AdvancedGraphView'
+import NetworkGraphView from './pages/NetworkGraphView'
 import PersonsPage from './pages/PersonsPage'
 import LinksPage from './pages/LinksPage'
 import SearchPage from './pages/SearchPage'
@@ -24,6 +25,7 @@ function App() {
         <Route path="graph/case/:id" element={<CaseGraphView />} />
         <Route path="case-graph" element={<CaseGraphView />} />
         <Route path="advanced-graph" element={<AdvancedGraphView />} />
+        <Route path="network-graph" element={<NetworkGraphView />} />
         <Route path="persons" element={<PersonsPage />} />
         <Route path="links" element={<LinksPage />} />
         <Route path="search" element={<SearchPage />} />
