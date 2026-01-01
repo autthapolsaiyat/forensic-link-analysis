@@ -10,10 +10,16 @@ import SearchPage from './pages/SearchPage'
 import CaseListPage from './pages/CaseListPage'
 import CaseDetailPage from './pages/CaseDetailPage'
 import InvestigationWorkspace from './pages/InvestigationWorkspace'
+import LiveImportMonitor from './pages/LiveImportMonitor'
 
 function App() {
   return (
     <Routes>
+      {/* Fullscreen route - no layout */}
+      <Route path="/live" element={<LiveImportMonitor />} />
+      <Route path="/import-monitor" element={<LiveImportMonitor />} />
+      
+      {/* Normal routes with layout */}
       <Route path="/" element={<Layout />}>
         <Route index element={<SmartDashboard />} />
         <Route path="cases" element={<CaseListPage />} />
