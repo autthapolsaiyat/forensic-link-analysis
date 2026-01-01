@@ -4,11 +4,13 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Search, Box, Grid3X3, ZoomIn, ZoomOut, RotateCcw,
-  Maximize2, Download, Settings, Play, Pause,
-  User, FileText, Package, Link2, Eye, Layers,
-  Move, Target, Sparkles
+  Download, Play, Pause, Layers, Target
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
+import {
+  CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon,
+  SampleIcon, DNAIcon
+} from '../components/ForensicIcons'
 
 // Types
 interface GraphNode {
@@ -615,29 +617,29 @@ export default function AdvancedGraphView() {
               {/* Legend */}
               <div className="card bg-dark-300 p-3">
                 <p className="text-xs text-dark-100 mb-2">Legend</p>
-                <div className="space-y-1 text-xs">
+                <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-[#00d4ff]"></span>
+                    <CaseIcon size={16} color="#00d4ff" />
                     <span>คดี</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#ef233c]"></span>
+                    <SuspectIcon size={16} color="#ef233c" />
                     <span>Suspect</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#f77f00]"></span>
+                    <ArrestedIcon size={16} color="#f77f00" />
                     <span>Arrested</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#2ec4b6]"></span>
+                    <ReferenceIcon size={16} color="#2ec4b6" />
                     <span>Reference</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rotate-45 bg-[#4895ef]"></span>
+                    <SampleIcon size={16} color="#4895ef" />
                     <span>วัตถุพยาน</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-[#a855f7]"></span>
+                    <CaseIcon size={16} color="#a855f7" />
                     <span>คดีเชื่อมโยง</span>
                   </div>
                 </div>
@@ -747,13 +749,21 @@ export default function AdvancedGraphView() {
               selectedNode.type === 'sample' ? 'bg-blue-500/10 border-blue-500/30' :
               'bg-purple-500/10 border-purple-500/30'
             }`}>
-              {selectedNode.type === 'case' || selectedNode.type === 'linked_case' ? (
-                <FileText className="w-6 h-6 text-primary-500 mb-2" />
-              ) : selectedNode.type === 'person' ? (
-                <User className="w-6 h-6 text-red-400 mb-2" />
-              ) : (
-                <Package className="w-6 h-6 text-blue-400 mb-2" />
-              )}
+              <div className="mb-2">
+                {selectedNode.type === 'case' || selectedNode.type === 'linked_case' ? (
+                  <CaseIcon size={28} color={selectedNode.type === 'case' ? '#00d4ff' : '#a855f7'} />
+                ) : selectedNode.type === 'person' ? (
+                  selectedNode.data?.role === 'Suspect' ? (
+                    <SuspectIcon size={28} color="#ef233c" />
+                  ) : selectedNode.data?.role === 'Arrested' ? (
+                    <ArrestedIcon size={28} color="#f77f00" />
+                  ) : (
+                    <ReferenceIcon size={28} color="#2ec4b6" />
+                  )
+                ) : (
+                  <SampleIcon size={28} color="#4895ef" />
+                )}
+              </div>
               <p className="font-semibold">{selectedNode.label}</p>
               <p className="text-xs text-dark-100 capitalize">{selectedNode.type}</p>
             </div>

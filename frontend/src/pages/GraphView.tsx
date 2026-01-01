@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { Users, FileText, Search, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { Search, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { graphApi, personsApi, type GraphNode, type GraphEdge } from '../services/api'
+import {
+  CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon
+} from '../components/ForensicIcons'
 
 export default function GraphView() {
   const { id } = useParams()
-  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedPerson, setSelectedPerson] = useState<string | null>(id || null)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [searchTerm, setSearchTerm] = useState('')

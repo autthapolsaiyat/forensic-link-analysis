@@ -3,10 +3,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import {
-  Search, ZoomIn, ZoomOut, RotateCcw, Package, User,
-  FileText, ArrowRight
+  Search, ZoomIn, ZoomOut, RotateCcw, ArrowRight
 } from 'lucide-react'
 import { casesApi, searchApi, personsApi } from '../services/api'
+import {
+  CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon,
+  SampleIcon, DNAIcon
+} from '../components/ForensicIcons'
 
 interface Sample {
   sample_id: string
@@ -646,8 +649,8 @@ export default function CaseGraphView() {
           {selectedNode.type === 'sample' && (
             <div className="space-y-3">
               <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                <Package className="w-6 h-6 text-blue-400 mb-2" />
-                <p className="text-xs text-dark-100">Lab Number</p>
+                <SampleIcon size={28} color="#4895ef" />
+                <p className="text-xs text-dark-100 mt-2">Lab Number</p>
                 <p className="font-mono font-semibold">{selectedNode.data.lab_number}</p>
               </div>
               <div>
@@ -676,12 +679,14 @@ export default function CaseGraphView() {
                 selectedNode.data.role === 'Arrested' ? 'bg-orange-500/10 border-orange-500/30' :
                 'bg-green-500/10 border-green-500/30'
               }`}>
-                <User className={`w-6 h-6 mb-2 ${
-                  selectedNode.data.role === 'Suspect' ? 'text-red-400' :
-                  selectedNode.data.role === 'Arrested' ? 'text-orange-400' :
-                  'text-green-400'
-                }`} />
-                <p className="font-semibold">{selectedNode.data.full_name}</p>
+                {selectedNode.data.role === 'Suspect' ? (
+                  <SuspectIcon size={28} color="#ef233c" />
+                ) : selectedNode.data.role === 'Arrested' ? (
+                  <ArrestedIcon size={28} color="#f77f00" />
+                ) : (
+                  <ReferenceIcon size={28} color="#2ec4b6" />
+                )}
+                <p className="font-semibold mt-2">{selectedNode.data.full_name}</p>
                 <p className="font-mono text-sm text-dark-100">{selectedNode.data.id_number}</p>
               </div>
               <div>
@@ -712,8 +717,8 @@ export default function CaseGraphView() {
           {selectedNode.type === 'linked_case' && (
             <div className="space-y-3">
               <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
-                <FileText className="w-6 h-6 text-purple-400 mb-2" />
-                <p className="text-xs text-dark-100">คดีเชื่อมโยง</p>
+                <CaseIcon size={28} color="#a855f7" />
+                <p className="text-xs text-dark-100 mt-2">คดีเชื่อมโยง</p>
                 <p className="font-mono font-semibold text-purple-400">{selectedNode.data.case_number}</p>
               </div>
               <div>
