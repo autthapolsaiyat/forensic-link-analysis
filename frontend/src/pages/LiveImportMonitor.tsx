@@ -119,19 +119,20 @@ export default function LiveImportMonitor() {
   // Fetch stats from API
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch('https://forensic-link-api.azurewebsites.net/api/v1/stats')
+      const response = await fetch('https://forensic-link-api.azurewebsites.net/api/v1/stats/overview')
       if (response.ok) {
-        const data = await response.json()
+        const json = await response.json()
+        const data = json.data || json
         
         setPrevStats(stats)
         
         const newStats: ImportStats = {
-          cases: data.total_cases || data.cases || 0,
-          samples: data.total_samples || data.samples || 0,
-          persons: data.total_persons || data.persons || 0,
-          dnaMatches: data.total_dna_matches || data.dnaMatches || 0,
-          links: data.total_links || data.links || 0,
-          multiCasePersons: data.multi_case_persons || data.multiCasePersons || 0
+          cases: data.total_cases || 0,
+          samples: data.total_samples || 0,
+          persons: data.total_persons || 0,
+          dnaMatches: data.total_dna_matches || 0,
+          links: data.total_links || 0,
+          multiCasePersons: data.multi_case_persons || 0
         }
         
         // Calculate rates (per minute, assuming 5 second refresh)
