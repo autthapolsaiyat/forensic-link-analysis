@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { Search, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { Search, ZoomIn, ZoomOut, RotateCcw, Users } from 'lucide-react'
 import { graphApi, personsApi, type GraphNode, type GraphEdge } from '../services/api'
 import {
   CaseIcon, SuspectIcon, ArrestedIcon, ReferenceIcon
