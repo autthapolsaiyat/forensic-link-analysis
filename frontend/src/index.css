@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0d1b2a;
+  --bg-secondary: #1b263b;
+  --bg-tertiary: #22334a;
+  --text-primary: #e0e1dd;
+  --text-secondary: #778da9;
+  --text-muted: #415a77;
+  --accent-cyan: #00d4ff;
+  --accent-red: #ef233c;
+  --accent-blue: #4895ef;
+  --accent-green: #2ec4b6;
+  --accent-orange: #f77f00;
+  --border-color: #415a77;
+}
+
+body {
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Custom Classes */
+@layer components {
+  .card {
+    @apply bg-dark-200 border border-dark-100 rounded-xl p-4;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-dark-300 font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-dark-200 hover:bg-dark-100 text-white border border-dark-100 font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+  
+  .input {
+    @apply bg-dark-300 border border-dark-100 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500;
+  }
+  
+  .stat-card {
+    @apply bg-dark-200 border border-dark-100 rounded-xl p-4 flex flex-col;
+  }
+  
+  .stat-value {
+    @apply text-3xl font-bold font-mono;
+  }
+  
+  .stat-label {
+    @apply text-sm text-dark-100 mt-1;
+  }
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes dash {
+  to { stroke-dashoffset: -100; }
+}
+
+.animate-dash {
+  animation: dash 3s linear infinite;
+}
