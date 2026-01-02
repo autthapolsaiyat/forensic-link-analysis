@@ -1,0 +1,37 @@
+{
+  "name": "forensic-link-frontend",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.17.0",
+    "@types/d3": "^7.4.3",
+    "3d-force-graph": "^1.73.0",
+    "axios": "^1.6.5",
+    "cytoscape": "^3.28.1",
+    "cytoscape-fcose": "^2.2.0",
+    "d3": "^7.8.5",
+    "lucide-react": "^0.309.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.1",
+    "recharts": "^2.10.4",
+    "three": "^0.160.0",
+    "three-spritetext": "^1.8.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
