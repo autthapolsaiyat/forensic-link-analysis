@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forensic Link Analysis - Azure Architecture</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'IBM Plex Sans Thai', sans-serif; }
+    .azure-gradient { background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes flow { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+    .flow-animation { animation: flow 2s linear infinite; }
+    .card { background: rgba(30,41,59,0.8); border: 1px solid rgba(71,85,105,0.5); }
+    .card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+  
+  <!-- Header -->
+  <header class="azure-gradient py-6 px-8 shadow-lg">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+          <span class="text-blue-600 font-bold text-lg">ศพฐ</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold">Forensic Link Analysis System</h1>
+          <p class="text-blue-100 text-sm">Azure Cloud Architecture & CI/CD Pipeline</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1 bg-white/20 rounded-full text-sm">v1.0</span>
+        <span class="px-3 py-1 bg-green-500/80 rounded-full text-sm flex items-center gap-1">
+          <span class="w-2 h-2 bg-white rounded-full animate-pulse-slow"></span>
+          Production Ready
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto py-8 px-4 space-y-8">
+    
+    <!-- Tech Stack -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">🛠️</span> Technology Stack
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">⚛️</div>
+          <div class="text-xs font-semibold">React 18</div>
+          <div class="text-[10px] text-slate-400">Frontend</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">📘</div>
+          <div class="text-xs font-semibold">TypeScript</div>
+          <div class="text-[10px] text-slate-400">Language</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">🟢</div>
+          <div class="text-xs font-semibold">Node.js</div>
+          <div class="text-[10px] text-slate-400">Backend</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">🗄️</div>
+          <div class="text-xs font-semibold">Azure SQL</div>
+          <div class="text-[10px] text-slate-400">Database</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">🌐</div>
+          <div class="text-xs font-semibold">Cosmos DB</div>
+          <div class="text-[10px] text-slate-400">Graph</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-2xl mb-1">⚡</div>
+          <div class="text-xs font-semibold">Functions</div>
+          <div class="text-[10px] text-slate-400">Serverless</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Azure Architecture -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">☁️</span> Azure Architecture
+      </h2>
+      
+      <div class="relative">
+        <!-- External APIs -->
+        <div class="mb-6">
+          <div class="text-xs text-slate-400 mb-2 uppercase tracking-wider">🔗 External APIs</div>
+          <div class="flex gap-3 flex-wrap">
+            <div class="px-4 py-2 bg-orange-500/20 border border-orange-500/50 rounded-lg text-sm">
+              NDDB API (DNA)
+            </div>
+            <div class="px-4 py-2 bg-orange-500/20 border border-orange-500/50 rounded-lg text-sm">
+              AFIS API (Fingerprint)
+            </div>
+            <div class="px-4 py-2 bg-orange-500/20 border border-orange-500/50 rounded-lg text-sm">
+              IBIS API (Firearms)
+            </div>
+          </div>
+        </div>
+
+        <!-- Flow Arrow -->
+        <div class="flex justify-center my-4">
+          <div class="w-0.5 h-8 bg-gradient-to-b from-orange-500 to-blue-500 relative overflow-hidden">
+            <div class="absolute inset-0 bg-white/50 flow-animation"></div>
+          </div>
+        </div>
+
+        <!-- Azure Cloud -->
+        <div class="border-2 border-blue-500/30 rounded-2xl p-5 bg-blue-500/5">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-xs">Az</span>
+            </div>
+            <span class="font-semibold text-blue-400">Microsoft Azure Cloud</span>
+          </div>
+
+          <!-- Row 1: Networking -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="p-3 bg-purple-500/20 border border-purple-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">🌍</div>
+              <div class="text-sm font-semibold text-purple-300">Front Door</div>
+              <div class="text-[10px] text-slate-400">CDN + WAF</div>
+            </div>
+            <div class="p-3 bg-purple-500/20 border border-purple-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">🚪</div>
+              <div class="text-sm font-semibold text-purple-300">API Management</div>
+              <div class="text-[10px] text-slate-400">Gateway</div>
+            </div>
+            <div class="p-3 bg-purple-500/20 border border-purple-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">🔐</div>
+              <div class="text-sm font-semibold text-purple-300">Azure AD B2C</div>
+              <div class="text-[10px] text-slate-400">Auth</div>
+            </div>
+          </div>
+
+          <!-- Flow Arrow -->
+          <div class="flex justify-center my-3">
+            <div class="text-slate-500">↓</div>
+          </div>
+
+          <!-- Row 2: Application -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="p-3 bg-green-500/20 border border-green-500/40 rounded-xl">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="text-lg">🖥️</div>
+                <div class="text-sm font-semibold text-green-300">Frontend</div>
+              </div>
+              <div class="text-[10px] text-slate-300 space-y-0.5">
+                <div>• Static Web Apps</div>
+                <div>• React + Vite</div>
+                <div>• React Flow</div>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-500/20 border border-blue-500/40 rounded-xl">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="text-lg">⚙️</div>
+                <div class="text-sm font-semibold text-blue-300">Backend</div>
+              </div>
+              <div class="text-[10px] text-slate-300 space-y-0.5">
+                <div>• App Service</div>
+                <div>• Node.js API</div>
+                <div>• Express/Fastify</div>
+              </div>
+            </div>
+            <div class="p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-xl">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="text-lg">⚡</div>
+                <div class="text-sm font-semibold text-yellow-300">Functions</div>
+              </div>
+              <div class="text-[10px] text-slate-300 space-y-0.5">
+                <div>• Sync Jobs</div>
+                <div>• Queue Handler</div>
+                <div>• Report Gen</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flow Arrow -->
+          <div class="flex justify-center my-3">
+            <div class="text-slate-500">↓</div>
+          </div>
+
+          <!-- Row 3: Data -->
+          <div class="grid grid-cols-4 gap-3 mb-4">
+            <div class="p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">🗃️</div>
+              <div class="text-xs font-semibold text-red-300">Azure SQL</div>
+              <div class="text-[10px] text-slate-400">Cases, Samples</div>
+            </div>
+            <div class="p-3 bg-cyan-500/20 border border-cyan-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">🕸️</div>
+              <div class="text-xs font-semibold text-cyan-300">Cosmos DB</div>
+              <div class="text-[10px] text-slate-400">Graph API</div>
+            </div>
+            <div class="p-3 bg-pink-500/20 border border-pink-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">📦</div>
+              <div class="text-xs font-semibold text-pink-300">Blob Storage</div>
+              <div class="text-[10px] text-slate-400">Files</div>
+            </div>
+            <div class="p-3 bg-orange-500/20 border border-orange-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">💨</div>
+              <div class="text-xs font-semibold text-orange-300">Redis Cache</div>
+              <div class="text-[10px] text-slate-400">Sessions</div>
+            </div>
+          </div>
+
+          <!-- Row 4: Integration -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-indigo-500/20 border border-indigo-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">📨</div>
+              <div class="text-xs font-semibold text-indigo-300">Service Bus</div>
+              <div class="text-[10px] text-slate-400">Message Queue</div>
+            </div>
+            <div class="p-3 bg-teal-500/20 border border-teal-500/40 rounded-xl text-center">
+              <div class="text-lg mb-1">📊</div>
+              <div class="text-xs font-semibold text-teal-300">App Insights</div>
+              <div class="text-[10px] text-slate-400">Monitoring</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CI/CD Pipeline -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">🔄</span> CI/CD Pipeline (GitHub Actions)
+      </h2>
+
+      <!-- CI Pipeline -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-3 py-1 bg-blue-500 rounded-lg text-xs font-bold">CI</span>
+          <span class="text-sm text-slate-400">Continuous Integration</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-slate-600 rounded flex items-center justify-center">📝</span>
+            Push/PR
+          </div>
+          <span class="text-slate-500">→</span>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-yellow-500/50 rounded flex items-center justify-center">🔍</span>
+            Lint
+          </div>
+          <span class="text-slate-500">→</span>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-blue-500/50 rounded flex items-center justify-center">📘</span>
+            TypeCheck
+          </div>
+          <span class="text-slate-500">→</span>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-green-500/50 rounded flex items-center justify-center">✅</span>
+            Test
+          </div>
+          <span class="text-slate-500">→</span>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-purple-500/50 rounded flex items-center justify-center">📦</span>
+            Build
+          </div>
+          <span class="text-slate-500">→</span>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-700/50 rounded-lg text-xs">
+            <span class="w-6 h-6 bg-red-500/50 rounded flex items-center justify-center">🛡️</span>
+            Security
+          </div>
+        </div>
+      </div>
+
+      <!-- CD Pipeline -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-3 py-1 bg-green-500 rounded-lg text-xs font-bold">CD</span>
+          <span class="text-sm text-slate-400">Continuous Deployment</span>
+        </div>
+        
+        <!-- Environments -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- DEV -->
+          <div class="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span class="font-semibold text-blue-300">Development</span>
+            </div>
+            <div class="text-xs text-slate-400 space-y-1">
+              <div>🔹 Branch: <code class="text-blue-300">develop</code></div>
+              <div>🔹 Auto Deploy: <span class="text-green-400">Yes</span></div>
+              <div>🔹 URL: dev.forensic.go.th</div>
+            </div>
+          </div>
+
+          <!-- Staging -->
+          <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span class="font-semibold text-yellow-300">Staging</span>
+            </div>
+            <div class="text-xs text-slate-400 space-y-1">
+              <div>🔹 Branch: <code class="text-yellow-300">main</code></div>
+              <div>🔹 Auto Deploy: <span class="text-green-400">Yes</span></div>
+              <div>🔹 UAT Testing</div>
+            </div>
+          </div>
+
+          <!-- Production -->
+          <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse-slow"></div>
+              <span class="font-semibold text-green-300">Production</span>
+            </div>
+            <div class="text-xs text-slate-400 space-y-1">
+              <div>🔹 Tag: <code class="text-green-300">v*.*.*</code></div>
+              <div>🔹 Manual Approval: <span class="text-yellow-400">Required</span></div>
+              <div>🔹 Blue-Green Deploy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deployment Steps -->
+      <div>
+        <div class="text-xs text-slate-400 mb-3">Deployment Steps</div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">1️⃣ Terraform (Infra)</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">2️⃣ DB Migration</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">3️⃣ API Deploy</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">4️⃣ Functions Deploy</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">5️⃣ Frontend Deploy</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-slate-700/50 rounded-lg">6️⃣ Smoke Test</div>
+          <span class="text-slate-500">→</span>
+          <div class="px-3 py-2 bg-green-500/30 rounded-lg text-green-300">✅ Done</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Repository Structure -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">📁</span> Repository Structure (Monorepo)
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-800/50 rounded-xl p-4 font-mono text-xs">
+          <div class="text-green-400 mb-2">forensic-link-analysis/</div>
+          <div class="text-slate-300 space-y-1 pl-4">
+            <div>├── 📂 <span class="text-blue-300">apps/</span></div>
+            <div class="pl-4">├── 📂 web/ <span class="text-slate-500"># React Frontend</span></div>
+            <div class="pl-4">└── 📂 api/ <span class="text-slate-500"># Node.js Backend</span></div>
+            <div>├── 📂 <span class="text-yellow-300">functions/</span> <span class="text-slate-500"># Azure Functions</span></div>
+            <div>├── 📂 <span class="text-purple-300">packages/</span></div>
+            <div class="pl-4">├── 📂 types/ <span class="text-slate-500"># Shared types</span></div>
+            <div class="pl-4">└── 📂 utils/ <span class="text-slate-500"># Shared utils</span></div>
+            <div>├── 📂 <span class="text-cyan-300">infrastructure/</span></div>
+            <div class="pl-4">└── 📂 terraform/ <span class="text-slate-500"># IaC</span></div>
+            <div>├── 📂 <span class="text-orange-300">database/</span></div>
+            <div class="pl-4">└── 📂 migrations/ <span class="text-slate-500"># SQL scripts</span></div>
+            <div>└── 📂 <span class="text-pink-300">.github/workflows/</span></div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div class="font-semibold text-sm text-blue-300 mb-1">apps/web</div>
+            <div class="text-xs text-slate-400">React 18, Vite, Tailwind, React Flow, Zustand</div>
+          </div>
+          <div class="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <div class="font-semibold text-sm text-green-300 mb-1">apps/api</div>
+            <div class="text-xs text-slate-400">Node.js, Express, Prisma, TypeScript</div>
+          </div>
+          <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <div class="font-semibold text-sm text-yellow-300 mb-1">functions/</div>
+            <div class="text-xs text-slate-400">Azure Functions v4, Timer Triggers, Queue Triggers</div>
+          </div>
+          <div class="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <div class="font-semibold text-sm text-purple-300 mb-1">infrastructure/</div>
+            <div class="text-xs text-slate-400">Terraform modules, Environment configs</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Flow -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">🔀</span> Data Flow
+      </h2>
+
+      <div class="bg-slate-800/50 rounded-xl p-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          <div class="text-center">
+            <div class="w-16 h-16 bg-orange-500/20 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <span class="text-2xl">🧬</span>
+            </div>
+            <div class="text-xs font-semibold">NDDB API</div>
+            <div class="text-[10px] text-slate-400">DNA Lab</div>
+          </div>
+
+          <div class="text-slate-500 text-2xl">→</div>
+
+          <div class="text-center">
+            <div class="w-16 h-16 bg-yellow-500/20 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <span class="text-2xl">⚡</span>
+            </div>
+            <div class="text-xs font-semibold">Azure Functions</div>
+            <div class="text-[10px] text-slate-400">Sync (15 min)</div>
+          </div>
+
+          <div class="text-slate-500 text-2xl">→</div>
+
+          <div class="text-center">
+            <div class="w-16 h-16 bg-red-500/20 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <span class="text-2xl">🗄️</span>
+            </div>
+            <div class="text-xs font-semibold">Azure SQL</div>
+            <div class="text-[10px] text-slate-400">Store Data</div>
+          </div>
+
+          <div class="text-slate-500 text-2xl">→</div>
+
+          <div class="text-center">
+            <div class="w-16 h-16 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <span class="text-2xl">🕸️</span>
+            </div>
+            <div class="text-xs font-semibold">Cosmos DB</div>
+            <div class="text-[10px] text-slate-400">Graph Data</div>
+          </div>
+
+          <div class="text-slate-500 text-2xl">→</div>
+
+          <div class="text-center">
+            <div class="w-16 h-16 bg-green-500/20 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <span class="text-2xl">🖥️</span>
+            </div>
+            <div class="text-xs font-semibold">React UI</div>
+            <div class="text-[10px] text-slate-400">Graph View</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Cost Estimation -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">💰</span> Cost Estimation (Production/Month)
+      </h2>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-lg font-bold text-blue-400">฿4,500</div>
+          <div class="text-xs text-slate-400">App Service</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-lg font-bold text-red-400">฿5,000</div>
+          <div class="text-xs text-slate-400">Azure SQL</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-lg font-bold text-cyan-400">฿3,000</div>
+          <div class="text-xs text-slate-400">Cosmos DB</div>
+        </div>
+        <div class="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div class="text-lg font-bold text-yellow-400">฿4,000</div>
+          <div class="text-xs text-slate-400">Others</div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between">
+        <div>
+          <div class="text-sm text-slate-300">Estimated Total</div>
+          <div class="text-xs text-slate-500">Per month (Production)</div>
+        </div>
+        <div class="text-2xl font-bold text-green-400">~฿16,500</div>
+      </div>
+    </section>
+
+    <!-- Security -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">🔒</span> Security & Compliance
+      </h2>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+          <div class="text-lg mb-1">🔐</div>
+          <div class="text-xs font-semibold text-emerald-300">Azure AD B2C</div>
+          <div class="text-[10px] text-slate-400">Authentication</div>
+        </div>
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+          <div class="text-lg mb-1">🔑</div>
+          <div class="text-xs font-semibold text-emerald-300">Key Vault</div>
+          <div class="text-[10px] text-slate-400">Secrets</div>
+        </div>
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+          <div class="text-lg mb-1">🛡️</div>
+          <div class="text-xs font-semibold text-emerald-300">WAF</div>
+          <div class="text-[10px] text-slate-400">Web Protection</div>
+        </div>
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+          <div class="text-lg mb-1">📋</div>
+          <div class="text-xs font-semibold text-emerald-300">PDPA</div>
+          <div class="text-[10px] text-slate-400">Compliance</div>
+        </div>
+      </div>
+
+      <div class="mt-4 p-3 bg-slate-700/30 rounded-lg text-xs text-slate-400">
+        <div class="font-semibold text-white mb-1">Data Protection:</div>
+        <div>• เลขบัตรประชาชน - Encrypted + Masked in UI</div>
+        <div>• DNA Profiles - Encrypted at rest</div>
+        <div>• All data - TLS 1.3 in transit</div>
+      </div>
+    </section>
+
+    <!-- Next Steps -->
+    <section class="card rounded-2xl p-6 transition-all">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">📋</span> Next Steps
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Setup Azure Subscription</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Create GitHub Repository</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Deploy Infrastructure (Terraform)</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Setup CI/CD Pipelines</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Deploy to Dev Environment</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Configure Monitoring</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Security Review</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
+          <input type="checkbox" class="w-4 h-4 rounded">
+          <span class="text-sm">Production Deployment</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-6 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
+      <p>Forensic Link Analysis System • ศูนย์พิสูจน์หลักฐาน 10</p>
+      <p class="text-xs mt-1">Document Version 1.0 • December 2024</p>
+    </div>
+  </footer>
+
+</body>
+</html>
