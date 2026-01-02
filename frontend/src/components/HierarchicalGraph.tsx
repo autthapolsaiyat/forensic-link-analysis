@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
 import { 
   Maximize2, Minimize2, Printer, Eye, EyeOff, 
-  RotateCcw, ZoomIn, ZoomOut, Filter
+  RotateCcw, ZoomIn, ZoomOut, Filter, Save, CreditCard
 } from 'lucide-react'
 
 interface GraphNode {
@@ -20,6 +20,12 @@ interface GraphNode {
   _children?: GraphNode[] // collapsed children
   x?: number
   y?: number
+}
+
+interface SavedPosition {
+  id: string
+  x: number
+  y: number
 }
 
 interface GraphEdge {
@@ -136,8 +142,44 @@ export default function HierarchicalGraph({
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const [zoomLevel, setZoomLevel] = useState(1)
+  const [showFullId, setShowFullId] = useState(false) // Toggle ID masking
+  const [savedPositions, setSavedPositions] = useState<SavedPosition[]>([]) // Saved layout
+  const [hiddenNodes, setHiddenNodes] = useState<Set<string>>(new Set()) // Individually hidden nodes
+  const [layoutSaved, setLayoutSaved] = useState(false) // Show save confirmation
 
   const colors = isPrintMode ? COLORS.light : COLORS.dark
+
+  // Format ID based on toggle
+  const formatIdNumber = useCallback((id: string) => {
+    if (!id || id.length < 5) return id || '-'
+    if (showFullId) return id
+    return id.substring(0, 5) + '-XXX-XX-X'
+  }, [showFullId])
+
+  // Hide individual node
+  const hideNode = useCallback((nodeId: string) => {
+    setHiddenNodes(prev => {
+      const newSet = new Set(prev)
+      newSet.add(nodeId)
+      return newSet
+    })
+  }, [])
+
+  // Save current layout positions
+  const saveLayout = useCallback(() => {
+    if (svgRef.current) {
+      const nodeElements = d3.select(svgRef.current).selectAll('.node-group')
+      const positions: SavedPosition[] = []
+      nodeElements.each(function(d: any) {
+        if (d && d.x !== undefined && d.y !== undefined) {
+          positions.push({ id: d.data.id, x: d.x, y: d.y })
+        }
+      })
+      setSavedPositions(positions)
+      setLayoutSaved(true)
+      setTimeout(() => setLayoutSaved(false), 2000)
+    }
+  }, [])
 
   // Toggle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -205,8 +247,11 @@ export default function HierarchicalGraph({
           visited.add(neighborId)
           const neighbor = nodeMap.get(neighborId)!
           
-          // Filter no-match if hidden
+          // Filter no-match if global toggle is off
           if (!showNoMatch && !hasMatch(neighbor)) return
+          
+          // Filter individually hidden nodes
+          if (hiddenNodes.has(neighborId)) return
           
           current.children = current.children || []
           current.children.push(neighbor)
@@ -216,7 +261,7 @@ export default function HierarchicalGraph({
     }
 
     return root
-  }, [nodes, edges, showNoMatch])
+  }, [nodes, edges, showNoMatch, hiddenNodes])
 
   // Main D3 rendering
   useEffect(() => {
@@ -240,6 +285,17 @@ export default function HierarchicalGraph({
       .separation((a, b) => (a.parent === b.parent ? 1.5 : 2))
 
     const treeData = treeLayout(hierarchy)
+
+    // Apply saved positions if available
+    if (savedPositions.length > 0) {
+      treeData.descendants().forEach(d => {
+        const saved = savedPositions.find(p => p.id === d.data.id)
+        if (saved) {
+          d.x = saved.x
+          d.y = saved.y
+        }
+      })
+    }
 
     // Main group with zoom/pan
     const g = svg.append('g')
@@ -283,6 +339,7 @@ export default function HierarchicalGraph({
       .selectAll('g')
       .data(treeData.descendants())
       .join('g')
+      .attr('class', 'node-group')
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .style('cursor', 'pointer')
 
@@ -366,6 +423,7 @@ export default function HierarchicalGraph({
 
     // Detail line 1
     nodeGroups.append('text')
+      .attr('class', 'id-text')
       .attr('x', -cardWidth / 2 + 12)
       .attr('y', d => -getCardHeight(d) / 2 + 60)
       .attr('font-size', '10px')
@@ -379,11 +437,11 @@ export default function HierarchicalGraph({
           return `🔫 ${type.substring(0, 12)} | 📅 ${date}`
         }
         if (node.type === 'person') {
-          return `🪪 ${maskIdNumber(data.id_number)}`
+          return `🪪 ${formatIdNumber(data.id_number)}`
         }
         if (node.type === 'sample' || node.type === 'dna') {
           const matchCount = data.match_count || 0
-          return matchCount > 0 ? `✅ ตรงกับ ${matchCount} บุคคล` : '❌ ไม่พบ DNA ตรง'
+          return matchCount > 0 ? `✅ ตรงกับ ${matchCount} บุคคล` : '⏳ มี DNA แต่ยังไม่ตรงกับใคร'
         }
         return ''
       })
@@ -439,6 +497,37 @@ export default function HierarchicalGraph({
       .attr('fill', colors.textMuted)
       .text(d => d.children?.length || 0)
 
+    // Close button for no-match DNA nodes (not center node)
+    const noMatchNodes = nodeGroups.filter(d => {
+      const node = d.data as GraphNode
+      return !node.isCenter && (node.type === 'sample' || node.type === 'dna') && !hasMatch(node)
+    })
+
+    noMatchNodes.append('circle')
+      .attr('class', 'close-btn')
+      .attr('cx', cardWidth / 2 - 16)
+      .attr('cy', d => -getCardHeight(d) / 2 + 14)
+      .attr('r', 10)
+      .attr('fill', isPrintMode ? '#fef2f2' : 'rgba(255, 45, 85, 0.2)')
+      .attr('stroke', isPrintMode ? '#dc2626' : '#ff2d55')
+      .attr('stroke-width', 1.5)
+      .style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        event.stopPropagation()
+        hideNode(d.data.id)
+      })
+
+    noMatchNodes.append('text')
+      .attr('class', 'close-btn-text')
+      .attr('x', cardWidth / 2 - 16)
+      .attr('y', d => -getCardHeight(d) / 2 + 18)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '12px')
+      .attr('font-weight', 'bold')
+      .attr('fill', isPrintMode ? '#dc2626' : '#ff2d55')
+      .attr('pointer-events', 'none')
+      .text('✕')
+
     // Interactions
     nodeGroups
       .on('mouseenter', function(event, d) {
@@ -477,7 +566,7 @@ export default function HierarchicalGraph({
 
     nodeGroups.call(drag as any)
 
-  }, [nodes, edges, dimensions, isPrintMode, showNoMatch, colors, buildHierarchy, onNodeClick])
+  }, [nodes, edges, dimensions, isPrintMode, showNoMatch, hiddenNodes, savedPositions, showFullId, colors, buildHierarchy, onNodeClick, hideNode, formatIdNumber])
 
   // Handle print
   const handlePrint = useCallback(() => {
@@ -663,9 +752,26 @@ export default function HierarchicalGraph({
         </button>
         
         <button 
+          className={`control-btn ${showFullId ? 'active' : ''}`}
+          onClick={() => setShowFullId(!showFullId)}
+          title={showFullId ? 'ซ่อนเลขบัตร' : 'แสดงเลขบัตรเต็ม'}
+        >
+          <CreditCard size={20} />
+        </button>
+        
+        <button 
+          className={`control-btn ${layoutSaved ? 'success' : ''}`}
+          onClick={saveLayout}
+          title="บันทึกตำแหน่ง Layout"
+          style={layoutSaved ? { background: 'rgba(57, 255, 20, 0.2)', borderColor: '#39ff14' } : {}}
+        >
+          {layoutSaved ? '✓' : <Save size={20} />}
+        </button>
+        
+        <button 
           className={`control-btn ${!showNoMatch ? 'active' : ''}`}
           onClick={() => setShowNoMatch(!showNoMatch)}
-          title={showNoMatch ? 'ซ่อน No Match' : 'แสดง No Match'}
+          title={showNoMatch ? 'ซ่อน No Match ทั้งหมด' : 'แสดง No Match ทั้งหมด'}
         >
           {showNoMatch ? <Eye size={20} /> : <EyeOff size={20} />}
         </button>
@@ -689,18 +795,23 @@ export default function HierarchicalGraph({
         <button 
           className="control-btn"
           onClick={() => {
-            if (svgRef.current) {
-              const svg = d3.select(svgRef.current)
-              svg.transition().duration(500).call(
-                d3.zoom<SVGSVGElement, unknown>().transform as any,
-                d3.zoomIdentity.translate(150, 80)
-              )
-            }
+            setHiddenNodes(new Set())
+            setSavedPositions([])
           }}
-          title="รีเซ็ตมุมมอง"
+          title="รีเซ็ตทั้งหมด"
         >
           <RotateCcw size={20} />
         </button>
+        
+        {hiddenNodes.size > 0 && (
+          <button 
+            className="control-btn warning"
+            onClick={() => setHiddenNodes(new Set())}
+            title={`แสดงกล่องที่ซ่อน (${hiddenNodes.size})`}
+          >
+            <span style={{ fontSize: '12px' }}>+{hiddenNodes.size}</span>
+          </button>
+        )}
         
         <div className="zoom-display">{Math.round(zoomLevel * 100)}%</div>
       </div>
