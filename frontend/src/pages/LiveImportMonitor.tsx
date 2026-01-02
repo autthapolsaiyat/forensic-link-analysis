@@ -17,15 +17,16 @@ interface Center {
   targetCases: number
 }
 
-// All centers data
+// All centers data - ข้อมูลจริงจาก NDDB
 const CENTERS: Center[] = [
-  { code: 'RTP00', name: 'CIFS', nameTH: 'พฐก', targetCases: 150000 },
-  { code: 'RTP02', name: 'PFSC2', nameTH: 'ศพฐ.2', targetCases: 200000 },
-  { code: 'RTP03', name: 'PFSC3', nameTH: 'ศพฐ.3', targetCases: 180000 },
-  { code: 'RTP04', name: 'PFSC4', nameTH: 'ศพฐ.4', targetCases: 160000 },
-  { code: 'RTP05', name: 'PFSC5', nameTH: 'ศพฐ.5', targetCases: 170000 },
-  { code: 'RTP09', name: 'PFSC9', nameTH: 'ศพฐ.9', targetCases: 140000 },
-  { code: 'RTP10', name: 'PFSC10', nameTH: 'ศพฐ.10', targetCases: 290000 },
+  { code: 'RTP00', name: 'CIFS', nameTH: 'พฐก', targetCases: 183383 },
+  { code: 'RTP01', name: 'PFSC1', nameTH: 'ศพฐ.1', targetCases: 85991 },
+  { code: 'RTP02', name: 'PFSC2', nameTH: 'ศพฐ.2', targetCases: 18291 },
+  { code: 'RTP03', name: 'PFSC3', nameTH: 'ศพฐ.3', targetCases: 36651 },
+  { code: 'RTP04', name: 'PFSC4', nameTH: 'ศพฐ.4', targetCases: 31525 },
+  { code: 'RTP05', name: 'PFSC5', nameTH: 'ศพฐ.5', targetCases: 77358 },
+  { code: 'RTP09', name: 'PFSC9', nameTH: 'ศพฐ.9', targetCases: 62549 },
+  { code: 'RTP10', name: 'PFSC10', nameTH: 'ศพฐ.10', targetCases: 281601 },
 ]
 
 // Stats interface
@@ -184,7 +185,7 @@ const AllCentersOverview = ({ centerStats }: { centerStats: CenterStats[] }) => 
 
 // Main component
 export default function LiveImportMonitor() {
-  const [selectedCenter, setSelectedCenter] = useState<Center>(CENTERS[6])
+  const [selectedCenter, setSelectedCenter] = useState<Center>(CENTERS[7]) // ศพฐ.10
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [stats, setStats] = useState<ImportStats>({ cases: 0, samples: 0, persons: 0, dnaMatches: 0, links: 0, multiCasePersons: 0 })
   const [centerStats, setCenterStats] = useState<CenterStats[]>([])
@@ -249,6 +250,7 @@ export default function LiveImportMonitor() {
         setIsConnected(true)
         setCenterStats([
           { code: 'RTP00', cases: 0, samples: 0, status: 'pending' },
+          { code: 'RTP01', cases: 0, samples: 0, status: 'pending' },
           { code: 'RTP02', cases: 0, samples: 0, status: 'pending' },
           { code: 'RTP03', cases: 0, samples: 0, status: 'pending' },
           { code: 'RTP04', cases: 0, samples: 0, status: 'pending' },
