@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   RefreshCw, Volume2, VolumeX, Maximize, Minimize,
   Database, TestTube, Users, Dna, Link2, CheckCircle,
-  TrendingUp, Clock, Zap, Activity
+  TrendingUp, Clock, Zap, Activity, Calendar
 } from 'lucide-react'
 
 // Stats interface
@@ -17,6 +17,40 @@ interface ImportStats {
   links: number
   multiCasePersons: number
 }
+
+// Yearly data
+interface YearlyData {
+  year: number
+  yearBE: number
+  nddbCases: number      // จำนวนใน NDDB (เป้าหมาย)
+  importedCases: number  // จำนวนที่นำเข้าแล้ว
+  status: 'pending' | 'importing' | 'completed'
+}
+
+// NDDB Data (เป้าหมาย) - ข้อมูลทั้งหมดใน NDDB
+const NDDB_YEARLY_DATA: { year: number; count: number }[] = [
+  { year: 2008, count: 1702 },
+  { year: 2009, count: 1661 },
+  { year: 2010, count: 1808 },
+  { year: 2011, count: 1692 },
+  { year: 2012, count: 1627 },
+  { year: 2013, count: 11521 },
+  { year: 2014, count: 27910 },
+  { year: 2015, count: 19442 },
+  { year: 2016, count: 16607 },
+  { year: 2017, count: 22483 },
+  { year: 2018, count: 19438 },
+  { year: 2019, count: 27296 },
+  { year: 2020, count: 33782 },
+  { year: 2021, count: 22369 },
+  { year: 2022, count: 11669 },
+  { year: 2023, count: 12944 },
+  { year: 2024, count: 30615 },
+  { year: 2025, count: 25525 },
+]
+
+// Calculate total expected
+const TOTAL_EXPECTED = NDDB_YEARLY_DATA.reduce((sum, y) => sum + y.count, 0)
 
 // Flip digit component - simplified
 const FlipDigit = ({ digit }: { digit: string }) => {
@@ -94,6 +128,7 @@ export default function LiveImportMonitor() {
   })
   const [prevStats, setPrevStats] = useState<ImportStats>(stats)
   const [rates, setRates] = useState({ cases: 0, samples: 0, persons: 0 })
+  const [yearlyImported, setYearlyImported] = useState<Record<number, number>>({})
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [lastUpdate, setLastUpdate] = useState(new Date())
@@ -115,6 +150,30 @@ export default function LiveImportMonitor() {
       audioRef.current.play().catch(() => {})
     }
   }, [soundEnabled])
+
+  // Fetch yearly breakdown from API
+  const fetchYearlyData = useCallback(async () => {
+    try {
+      const response = await fetch('https://forensic-link-api.azurewebsites.net/api/v1/stats/by-year')
+      if (response.ok) {
+        const json = await response.json()
+        const data = json.data || json
+        
+        // Convert array to object { year: count }
+        const yearlyMap: Record<number, number> = {}
+        if (Array.isArray(data)) {
+          data.forEach((item: any) => {
+            const year = item.year || item.case_year
+            const count = item.count || item.case_count || item.total
+            if (year) yearlyMap[year] = count
+          })
+        }
+        setYearlyImported(yearlyMap)
+      }
+    } catch (error) {
+      console.error('Failed to fetch yearly data:', error)
+    }
+  }, [])
 
   // Fetch stats from API
   const fetchStats = useCallback(async () => {
@@ -163,7 +222,11 @@ export default function LiveImportMonitor() {
   // Auto refresh every 5 seconds
   useEffect(() => {
     fetchStats()
-    const interval = setInterval(fetchStats, 5000)
+    fetchYearlyData()
+    const interval = setInterval(() => {
+      fetchStats()
+      fetchYearlyData()
+    }, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -185,9 +248,31 @@ export default function LiveImportMonitor() {
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
 
-  // Calculate progress (estimate based on expected total)
-  const expectedTotal = 290000
-  const progress = (stats.cases / expectedTotal) * 100
+  // Calculate progress
+  const progress = (stats.cases / TOTAL_EXPECTED) * 100
+  
+  // Calculate yearly status using real data from API
+  const getYearlyStatus = (): YearlyData[] => {
+    return NDDB_YEARLY_DATA.map(nddb => {
+      const imported = yearlyImported[nddb.year] || 0
+      const percent = (imported / nddb.count) * 100
+      
+      let status: 'pending' | 'importing' | 'completed' = 'pending'
+      if (percent >= 99) status = 'completed'
+      else if (imported > 0) status = 'importing'
+      
+      return {
+        year: nddb.year,
+        yearBE: nddb.year + 543,
+        nddbCases: nddb.count,
+        importedCases: imported,
+        status
+      }
+    }).reverse() // Show newest first
+  }
+  
+  const yearlyStatus = getYearlyStatus()
+  const completedYears = yearlyStatus.filter(y => y.status === 'completed').length
 
   return (
     <div ref={containerRef} className="live-monitor-container">
@@ -538,6 +623,129 @@ export default function LiveImportMonitor() {
             font-size: 24px;
           }
         }
+
+        /* Yearly Table */
+        .yearly-table-container {
+          background: rgba(13, 21, 32, 0.8);
+          border: 1px solid rgba(0, 240, 255, 0.2);
+          border-radius: 16px;
+          padding: 20px;
+          margin-bottom: 20px;
+          overflow-x: auto;
+        }
+
+        .yearly-table-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 15px;
+          font-size: 16px;
+          color: #00f0ff;
+        }
+
+        .yearly-summary {
+          margin-left: auto;
+          background: rgba(57, 255, 20, 0.2);
+          color: #39ff14;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 13px;
+        }
+
+        .yearly-table {
+          width: 100%;
+          min-width: 600px;
+        }
+
+        .yearly-row {
+          display: grid;
+          grid-template-columns: 80px 80px 100px 100px 150px 80px;
+          gap: 10px;
+          padding: 12px 10px;
+          border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+          align-items: center;
+          font-size: 14px;
+        }
+
+        .yearly-row.header-row {
+          color: #8892a0;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        .yearly-row.completed {
+          background: rgba(57, 255, 20, 0.05);
+        }
+
+        .yearly-row.importing {
+          background: rgba(0, 240, 255, 0.1);
+          animation: rowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes rowPulse {
+          0%, 100% { background: rgba(0, 240, 255, 0.1); }
+          50% { background: rgba(0, 240, 255, 0.2); }
+        }
+
+        .yearly-row.pending {
+          opacity: 0.5;
+        }
+
+        .col-year, .col-year-be {
+          font-family: 'SF Mono', monospace;
+          color: #00f0ff;
+        }
+
+        .col-nddb {
+          color: #8892a0;
+        }
+
+        .col-imported {
+          color: #39ff14;
+          font-weight: 600;
+        }
+
+        .col-progress {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .mini-progress {
+          flex: 1;
+          height: 6px;
+          background: rgba(0, 20, 40, 0.8);
+          border-radius: 3px;
+          overflow: hidden;
+        }
+
+        .mini-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #00f0ff, #39ff14);
+          border-radius: 3px;
+          transition: width 0.5s ease-out;
+        }
+
+        .progress-text {
+          font-size: 12px;
+          color: #00f0ff;
+          min-width: 40px;
+          text-align: right;
+        }
+
+        .status-badge {
+          font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+          .yearly-row {
+            grid-template-columns: 60px 60px 70px 70px 100px 50px;
+            font-size: 12px;
+            padding: 10px 5px;
+          }
+        }
       `}</style>
 
       {/* Header */}
@@ -631,8 +839,54 @@ export default function LiveImportMonitor() {
       {/* Progress */}
       <ProgressBar 
         progress={progress}
-        label={`ศพฐ.10 Import Progress (Est. ${expectedTotal.toLocaleString()} cases)`}
+        label={`ศพฐ.10 Import Progress (${stats.cases.toLocaleString()} / ${TOTAL_EXPECTED.toLocaleString()} cases)`}
       />
+
+      {/* Yearly Breakdown Table */}
+      <div className="yearly-table-container">
+        <div className="yearly-table-header">
+          <Calendar size={20} color="#00f0ff" />
+          <span>สถานะนำเข้าแยกตามปี</span>
+          <span className="yearly-summary">
+            {completedYears} / {NDDB_YEARLY_DATA.length} ปี
+          </span>
+        </div>
+        <div className="yearly-table">
+          <div className="yearly-row header-row">
+            <div className="col-year">ปี ค.ศ.</div>
+            <div className="col-year-be">ปี พ.ศ.</div>
+            <div className="col-nddb">NDDB</div>
+            <div className="col-imported">นำเข้าแล้ว</div>
+            <div className="col-progress">ความคืบหน้า</div>
+            <div className="col-status">สถานะ</div>
+          </div>
+          {yearlyStatus.map((year) => {
+            const percent = year.nddbCases > 0 ? (year.importedCases / year.nddbCases) * 100 : 0
+            return (
+              <div key={year.year} className={`yearly-row ${year.status}`}>
+                <div className="col-year">{year.year}</div>
+                <div className="col-year-be">{year.yearBE}</div>
+                <div className="col-nddb">{year.nddbCases.toLocaleString()}</div>
+                <div className="col-imported">{year.importedCases.toLocaleString()}</div>
+                <div className="col-progress">
+                  <div className="mini-progress">
+                    <div 
+                      className="mini-progress-fill" 
+                      style={{ width: `${Math.min(percent, 100)}%` }}
+                    />
+                  </div>
+                  <span className="progress-text">{Math.round(percent)}%</span>
+                </div>
+                <div className="col-status">
+                  {year.status === 'completed' && <span className="status-badge completed">✅</span>}
+                  {year.status === 'importing' && <span className="status-badge importing">🔄</span>}
+                  {year.status === 'pending' && <span className="status-badge pending">⏳</span>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       {/* Status Bar */}
       <div className="status-bar">
