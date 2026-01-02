@@ -123,7 +123,23 @@ const getNodeColors = (node: GraphNode, isPrintMode: boolean) => {
 // Check if node has DNA match
 const hasMatch = (node: GraphNode) => {
   if (node.type !== 'sample' && node.type !== 'dna') return true
-  return node.data?.match_count > 0 || node.data?.has_match !== false
+  const data = node.data || {}
+  // Has match if: match_count > 0 OR has_match is explicitly true
+  if (data.match_count > 0) return true
+  if (data.has_match === true) return true
+  // Check if connected to persons (means it has match)
+  if (data.connected_persons > 0) return true
+  // Default: no match
+  return false
+}
+
+// Check if node should show close button (no match OR can be hidden)
+const canHideNode = (node: GraphNode) => {
+  if (node.isCenter) return false // Never hide center
+  if (node.type === 'sample' || node.type === 'dna') {
+    return !hasMatch(node) // Can hide no-match DNA
+  }
+  return false
 }
 
 export default function HierarchicalGraph({ 
@@ -498,19 +514,33 @@ export default function HierarchicalGraph({
       .text(d => d.children?.length || 0)
 
     // Close button for no-match DNA nodes (not center node)
+    // Show on ALL sample/dna nodes that don't have matches
     const noMatchNodes = nodeGroups.filter(d => {
       const node = d.data as GraphNode
-      return !node.isCenter && (node.type === 'sample' || node.type === 'dna') && !hasMatch(node)
+      // Show close button on samples/dna that:
+      // 1. Are not center node
+      // 2. Have no match OR have match_count = 0
+      if (node.isCenter) return false
+      if (node.type === 'sample' || node.type === 'dna') {
+        const data = node.data || {}
+        // If match_count is 0 or undefined, show close button
+        const matchCount = data.match_count || 0
+        return matchCount === 0
+      }
+      return false
     })
 
-    noMatchNodes.append('circle')
-      .attr('class', 'close-btn')
-      .attr('cx', cardWidth / 2 - 16)
-      .attr('cy', d => -getCardHeight(d) / 2 + 14)
-      .attr('r', 10)
-      .attr('fill', isPrintMode ? '#fef2f2' : 'rgba(255, 45, 85, 0.2)')
+    // Close button background (more visible)
+    noMatchNodes.append('rect')
+      .attr('class', 'close-btn-bg')
+      .attr('x', cardWidth / 2 - 28)
+      .attr('y', d => -getCardHeight(d) / 2 + 4)
+      .attr('width', 22)
+      .attr('height', 22)
+      .attr('rx', 6)
+      .attr('fill', isPrintMode ? '#fef2f2' : 'rgba(255, 45, 85, 0.3)')
       .attr('stroke', isPrintMode ? '#dc2626' : '#ff2d55')
-      .attr('stroke-width', 1.5)
+      .attr('stroke-width', 2)
       .style('cursor', 'pointer')
       .on('click', function(event, d) {
         event.stopPropagation()
@@ -519,10 +549,10 @@ export default function HierarchicalGraph({
 
     noMatchNodes.append('text')
       .attr('class', 'close-btn-text')
-      .attr('x', cardWidth / 2 - 16)
-      .attr('y', d => -getCardHeight(d) / 2 + 18)
+      .attr('x', cardWidth / 2 - 17)
+      .attr('y', d => -getCardHeight(d) / 2 + 20)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
+      .attr('font-size', '14px')
       .attr('font-weight', 'bold')
       .attr('fill', isPrintMode ? '#dc2626' : '#ff2d55')
       .attr('pointer-events', 'none')
