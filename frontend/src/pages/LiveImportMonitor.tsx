@@ -395,6 +395,8 @@ export default function LiveImportMonitor() {
         @keyframes celebrate { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
         .complete-banner h2 { color: #39ff14; font-size: 28px; margin: 0 0 10px 0; text-shadow: 0 0 30px rgba(57, 255, 20, 0.8); }
         .complete-banner p { color: #8892a0; margin: 0; }
+        .pending-banner { display: flex; align-items: center; justify-content: center; gap: 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px; font-size: 16px; color: #ffc107; }
+        .pending-banner span:first-child { font-size: 24px; }
         @media (max-width: 768px) { .live-monitor-container { padding: 15px; } .stats-grid { grid-template-columns: 1fr; } .monitor-title h1 { font-size: 1.5rem; } .flip-card { padding: 15px; } .centers-grid { grid-template-columns: repeat(2, 1fr); } .yearly-row { grid-template-columns: 60px 60px 70px 70px 100px 50px; font-size: 12px; padding: 10px 5px; } }
         @media (min-width: 768px) and (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
@@ -428,59 +430,80 @@ export default function LiveImportMonitor() {
       {viewMode === 'single' && (
         <>
           <CenterSelector selectedCenter={selectedCenter} onSelect={setSelectedCenter} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
-          {importComplete && (
-            <div className="complete-banner">
-              <CheckCircle size={48} color="#39ff14" style={{ marginBottom: 15 }} />
-              <h2>🎉 Import Complete!</h2>
-              <p>ข้อมูลนำเข้าเสร็จสมบูรณ์ พร้อมรัน Link Engine</p>
+          
+          {/* Show stats only for RTP10, others show 0 */}
+          {(() => {
+            const isRTP10 = selectedCenter.code === 'RTP10'
+            const displayStats = isRTP10 ? stats : { cases: 0, samples: 0, persons: 0, dnaMatches: 0, links: 0, multiCasePersons: 0 }
+            const displayRates = isRTP10 ? rates : { cases: 0, samples: 0, persons: 0 }
+            const displayProgress = isRTP10 ? progress : 0
+            
+            return (
+              <>
+                {!isRTP10 && (
+                  <div className="pending-banner">
+                    <span>⏳</span>
+                    <span>ยังไม่ได้นำเข้าข้อมูล {selectedCenter.nameTH} - รอคิว</span>
+                  </div>
+                )}
+                {isRTP10 && importComplete && (
+                  <div className="complete-banner">
+                    <CheckCircle size={48} color="#39ff14" style={{ marginBottom: 15 }} />
+                    <h2>🎉 Import Complete!</h2>
+                    <p>ข้อมูลนำเข้าเสร็จสมบูรณ์ พร้อมรัน Link Engine</p>
+                  </div>
+                )}
+                <div className="stats-grid">
+                  <FlipNumber value={displayStats.cases} label="Cases" icon={Database} color="#00f0ff" rate={displayRates.cases} />
+                  <FlipNumber value={displayStats.samples} label="Samples" icon={TestTube} color="#a855f7" rate={displayRates.samples} />
+                  <FlipNumber value={displayStats.persons} label="Persons" icon={Users} color="#39ff14" rate={displayRates.persons} />
+                  <FlipNumber value={displayStats.dnaMatches} label="DNA Matches" icon={Dna} color="#f72585" />
+                  <FlipNumber value={displayStats.multiCasePersons} label="Multi-Case Persons" icon={Users} color="#ff6b35" />
+                  <FlipNumber value={displayStats.links} label="Links" icon={Link2} color="#ffd700" />
+                </div>
+                <ProgressBar progress={displayProgress} label={`${selectedCenter.nameTH} Import Progress (${displayStats.cases.toLocaleString()} / ${selectedCenter.targetCases.toLocaleString()} cases)`} />
+              </>
+            )
+          })()}
+          {selectedCenter.code === 'RTP10' && (
+            <div className="yearly-table-container">
+              <div className="yearly-table-header">
+                <Calendar size={20} color="#00f0ff" />
+                <span>สถานะนำเข้าแยกตามปี</span>
+                <span className="yearly-summary">{completedYears} / {NDDB_YEARLY_DATA.length} ปี</span>
+              </div>
+              <div className="yearly-table">
+                <div className="yearly-row header-row">
+                  <div className="col-year">ปี ค.ศ.</div>
+                  <div className="col-year-be">ปี พ.ศ.</div>
+                  <div className="col-nddb">NDDB</div>
+                  <div className="col-imported">นำเข้าแล้ว</div>
+                  <div className="col-progress">ความคืบหน้า</div>
+                  <div className="col-status">สถานะ</div>
+                </div>
+                {yearlyStatus.map((year) => {
+                  const percent = year.nddbCases > 0 ? (year.importedCases / year.nddbCases) * 100 : 0
+                  return (
+                    <div key={year.year} className={`yearly-row ${year.status}`}>
+                      <div className="col-year">{year.year}</div>
+                      <div className="col-year-be">{year.yearBE}</div>
+                      <div className="col-nddb">{year.nddbCases.toLocaleString()}</div>
+                      <div className="col-imported">{year.importedCases.toLocaleString()}</div>
+                      <div className="col-progress">
+                        <div className="mini-progress">
+                          <div className="mini-progress-fill" style={{ width: `${Math.min(percent, 100)}%` }} />
+                        </div>
+                        <span className="progress-text">{Math.round(percent)}%</span>
+                      </div>
+                      <div className="col-status">
+                        {year.status === 'completed' ? <span className="status-badge">✅</span> : year.status === 'importing' ? <span className="status-badge">🔄</span> : <span className="status-badge">⏳</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
-          <div className="stats-grid">
-            <FlipNumber value={stats.cases} label="Cases" icon={Database} color="#00f0ff" rate={rates.cases} />
-            <FlipNumber value={stats.samples} label="Samples" icon={TestTube} color="#a855f7" rate={rates.samples} />
-            <FlipNumber value={stats.persons} label="Persons" icon={Users} color="#39ff14" rate={rates.persons} />
-            <FlipNumber value={stats.dnaMatches} label="DNA Matches" icon={Dna} color="#f72585" />
-            <FlipNumber value={stats.multiCasePersons} label="Multi-Case Persons" icon={Users} color="#ff6b35" />
-            <FlipNumber value={stats.links} label="Links" icon={Link2} color="#ffd700" />
-          </div>
-          <ProgressBar progress={progress} label={`${selectedCenter.nameTH} Import Progress (${stats.cases.toLocaleString()} / ${selectedCenter.targetCases.toLocaleString()} cases)`} />
-          <div className="yearly-table-container">
-            <div className="yearly-table-header">
-              <Calendar size={20} color="#00f0ff" />
-              <span>สถานะนำเข้าแยกตามปี</span>
-              <span className="yearly-summary">{completedYears} / {NDDB_YEARLY_DATA.length} ปี</span>
-            </div>
-            <div className="yearly-table">
-              <div className="yearly-row header-row">
-                <div className="col-year">ปี ค.ศ.</div>
-                <div className="col-year-be">ปี พ.ศ.</div>
-                <div className="col-nddb">NDDB</div>
-                <div className="col-imported">นำเข้าแล้ว</div>
-                <div className="col-progress">ความคืบหน้า</div>
-                <div className="col-status">สถานะ</div>
-              </div>
-              {yearlyStatus.map((year) => {
-                const percent = year.nddbCases > 0 ? (year.importedCases / year.nddbCases) * 100 : 0
-                return (
-                  <div key={year.year} className={`yearly-row ${year.status}`}>
-                    <div className="col-year">{year.year}</div>
-                    <div className="col-year-be">{year.yearBE}</div>
-                    <div className="col-nddb">{year.nddbCases.toLocaleString()}</div>
-                    <div className="col-imported">{year.importedCases.toLocaleString()}</div>
-                    <div className="col-progress">
-                      <div className="mini-progress">
-                        <div className="mini-progress-fill" style={{ width: `${Math.min(percent, 100)}%` }} />
-                      </div>
-                      <span className="progress-text">{Math.round(percent)}%</span>
-                    </div>
-                    <div className="col-status">
-                      {year.status === 'completed' ? <span className="status-badge">✅</span> : year.status === 'importing' ? <span className="status-badge">🔄</span> : <span className="status-badge">⏳</span>}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
         </>
       )}
 
