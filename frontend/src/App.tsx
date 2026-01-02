@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import SmartDashboard from './pages/SmartDashboard'
 import JarvisNetworkPage from './pages/JarvisNetworkPage'
+import HierarchicalNetworkPage from './pages/HierarchicalNetworkPage'
 import IconGallery from './pages/IconGallery'
 import PersonsPage from './pages/PersonsPage'
 import LinksPage from './pages/LinksPage'
@@ -15,9 +16,11 @@ import LiveImportMonitor from './pages/LiveImportMonitor'
 function App() {
   return (
     <Routes>
-      {/* Fullscreen route - no layout */}
+      {/* Fullscreen routes - no layout */}
       <Route path="/live" element={<LiveImportMonitor />} />
       <Route path="/import-monitor" element={<LiveImportMonitor />} />
+      <Route path="/hierarchy/case/:id" element={<HierarchicalNetworkPage />} />
+      <Route path="/hierarchy" element={<HierarchicalNetworkPage />} />
       
       {/* Normal routes with layout */}
       <Route path="/" element={<Layout />}>

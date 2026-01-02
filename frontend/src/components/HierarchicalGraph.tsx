@@ -1,0 +1,789 @@
+// src/components/HierarchicalGraph.tsx
+// Hierarchical Tree Layout with DNA Evidence Flow
+
+import { useEffect, useRef, useState, useCallback } from 'react'
+import * as d3 from 'd3'
+import { 
+  Maximize2, Minimize2, Printer, Eye, EyeOff, 
+  RotateCcw, ZoomIn, ZoomOut, Filter
+} from 'lucide-react'
+
+interface GraphNode {
+  id: string
+  type: 'case' | 'person' | 'sample' | 'dna'
+  label: string
+  role?: string
+  level?: number
+  isCenter?: boolean
+  data?: any
+  children?: GraphNode[]
+  _children?: GraphNode[] // collapsed children
+  x?: number
+  y?: number
+}
+
+interface GraphEdge {
+  source: string | GraphNode
+  target: string | GraphNode
+  type: string
+  label?: string
+}
+
+interface HierarchicalGraphProps {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  onNodeClick?: (node: GraphNode) => void
+  width?: number
+  height?: number
+}
+
+// Color Palette
+const COLORS = {
+  dark: {
+    bg: '#0a0e14',
+    cardBg: 'rgba(13, 21, 32, 0.95)',
+    text: '#e0e1dd',
+    textMuted: '#8892a0',
+    border: 'rgba(0, 240, 255, 0.3)',
+    case: { primary: '#00f0ff', secondary: '#0a1a1f' },
+    caseLinked: { primary: '#a855f7', secondary: '#1a0a1f' },
+    suspect: { primary: '#ff2d55', secondary: '#1f0a0f' },
+    arrested: { primary: '#ff6b35', secondary: '#1f150a' },
+    reference: { primary: '#39ff14', secondary: '#0a1f0f' },
+    victim: { primary: '#a855f7', secondary: '#1a0a1f' },
+    dna: { primary: '#ec4899', secondary: '#1f0a15' },
+    noMatch: { primary: '#6b7280', secondary: '#1a1a1a' },
+    line: { dna: '#ff2d55', found: '#00f0ff', person: '#a855f7' }
+  },
+  light: {
+    bg: '#ffffff',
+    cardBg: '#ffffff',
+    text: '#1f2937',
+    textMuted: '#6b7280',
+    border: '#d1d5db',
+    case: { primary: '#0891b2', secondary: '#f0fdfa' },
+    caseLinked: { primary: '#7c3aed', secondary: '#faf5ff' },
+    suspect: { primary: '#dc2626', secondary: '#fef2f2' },
+    arrested: { primary: '#ea580c', secondary: '#fff7ed' },
+    reference: { primary: '#16a34a', secondary: '#f0fdf4' },
+    victim: { primary: '#7c3aed', secondary: '#faf5ff' },
+    dna: { primary: '#db2777', secondary: '#fdf2f8' },
+    noMatch: { primary: '#9ca3af', secondary: '#f9fafb' },
+    line: { dna: '#dc2626', found: '#0891b2', person: '#7c3aed' }
+  }
+}
+
+// Format Thai date
+const formatThaiDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    const thaiYear = date.getFullYear() + 543
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
+                    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    return `${date.getDate()} ${months[date.getMonth()]} ${thaiYear % 100}`
+  } catch {
+    return dateStr
+  }
+}
+
+// Mask ID number
+const maskIdNumber = (id: string) => {
+  if (!id || id.length < 5) return id || '-'
+  return id.substring(0, 5) + '-XXX-XX-X'
+}
+
+// Get node colors
+const getNodeColors = (node: GraphNode, isPrintMode: boolean) => {
+  const palette = isPrintMode ? COLORS.light : COLORS.dark
+  
+  if (node.type === 'case') {
+    return node.isCenter ? palette.case : palette.caseLinked
+  }
+  if (node.type === 'person') {
+    const role = node.role || node.data?.person_type
+    if (role === 'Suspect') return palette.suspect
+    if (role === 'Arrested') return palette.arrested
+    if (role === 'Victim') return palette.victim
+    return palette.reference
+  }
+  if (node.type === 'sample' || node.type === 'dna') {
+    const hasMatch = node.data?.match_count > 0 || node.data?.has_match
+    return hasMatch ? palette.dna : palette.noMatch
+  }
+  return palette.case
+}
+
+// Check if node has DNA match
+const hasMatch = (node: GraphNode) => {
+  if (node.type !== 'sample' && node.type !== 'dna') return true
+  return node.data?.match_count > 0 || node.data?.has_match !== false
+}
+
+export default function HierarchicalGraph({ 
+  nodes, 
+  edges, 
+  onNodeClick,
+  width = 800,
+  height = 600 
+}: HierarchicalGraphProps) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width, height })
+  const [isPrintMode, setIsPrintMode] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showNoMatch, setShowNoMatch] = useState(true)
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
+  const [zoomLevel, setZoomLevel] = useState(1)
+
+  const colors = isPrintMode ? COLORS.light : COLORS.dark
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }, [])
+
+  // Update dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setDimensions({ width: rect.width, height: rect.height })
+      }
+    }
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    document.addEventListener('fullscreenchange', updateDimensions)
+    return () => {
+      window.removeEventListener('resize', updateDimensions)
+      document.removeEventListener('fullscreenchange', updateDimensions)
+    }
+  }, [])
+
+  // Build hierarchy from flat nodes and edges
+  const buildHierarchy = useCallback(() => {
+    if (nodes.length === 0) return null
+
+    // Find center node
+    const centerNode = nodes.find(n => n.isCenter) || nodes[0]
+    
+    // Create adjacency map
+    const adjMap = new Map<string, Set<string>>()
+    const nodeMap = new Map<string, GraphNode>()
+    
+    nodes.forEach(n => {
+      nodeMap.set(n.id, { ...n, children: [] })
+      adjMap.set(n.id, new Set())
+    })
+    
+    edges.forEach(e => {
+      const sourceId = typeof e.source === 'string' ? e.source : e.source.id
+      const targetId = typeof e.target === 'string' ? e.target : e.target.id
+      adjMap.get(sourceId)?.add(targetId)
+      adjMap.get(targetId)?.add(sourceId)
+    })
+
+    // BFS to build tree
+    const visited = new Set<string>()
+    const root = nodeMap.get(centerNode.id)!
+    const queue: GraphNode[] = [root]
+    visited.add(centerNode.id)
+
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      const neighbors = adjMap.get(current.id) || new Set()
+      
+      neighbors.forEach(neighborId => {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId)
+          const neighbor = nodeMap.get(neighborId)!
+          
+          // Filter no-match if hidden
+          if (!showNoMatch && !hasMatch(neighbor)) return
+          
+          current.children = current.children || []
+          current.children.push(neighbor)
+          queue.push(neighbor)
+        }
+      })
+    }
+
+    return root
+  }, [nodes, edges, showNoMatch])
+
+  // Main D3 rendering
+  useEffect(() => {
+    if (!svgRef.current || nodes.length === 0) return
+
+    const svg = d3.select(svgRef.current)
+    const { width, height } = dimensions
+
+    svg.selectAll('*').remove()
+    svg.style('background', colors.bg)
+
+    // Create hierarchy
+    const root = buildHierarchy()
+    if (!root) return
+
+    const hierarchy = d3.hierarchy(root)
+    
+    // Tree layout
+    const treeLayout = d3.tree<GraphNode>()
+      .size([width - 300, height - 200])
+      .separation((a, b) => (a.parent === b.parent ? 1.5 : 2))
+
+    const treeData = treeLayout(hierarchy)
+
+    // Main group with zoom/pan
+    const g = svg.append('g')
+      .attr('transform', `translate(150, 80)`)
+
+    // Zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.2, 3])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform)
+        setZoomLevel(event.transform.k)
+      })
+
+    svg.call(zoom)
+    svg.call(zoom.transform, d3.zoomIdentity.translate(150, 80))
+
+    // Draw links
+    const links = g.append('g')
+      .selectAll('path')
+      .data(treeData.links())
+      .join('path')
+      .attr('d', d3.linkVertical<any, any>()
+        .x(d => d.x)
+        .y(d => d.y))
+      .attr('fill', 'none')
+      .attr('stroke', d => {
+        const targetType = d.target.data.type
+        if (targetType === 'person') return colors.line.dna
+        if (targetType === 'sample' || targetType === 'dna') return colors.line.found
+        return colors.line.person
+      })
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', d => {
+        const targetType = d.target.data.type
+        return targetType === 'case' ? '8,4' : 'none'
+      })
+      .attr('opacity', 0.7)
+
+    // Draw nodes
+    const nodeGroups = g.append('g')
+      .selectAll('g')
+      .data(treeData.descendants())
+      .join('g')
+      .attr('transform', d => `translate(${d.x},${d.y})`)
+      .style('cursor', 'pointer')
+
+    // Card dimensions
+    const cardWidth = 200
+    const getCardHeight = (d: any) => {
+      const node = d.data as GraphNode
+      if (node.type === 'case') return 90
+      if (node.type === 'person') return 85
+      return 70
+    }
+
+    // Card backgrounds
+    nodeGroups.append('rect')
+      .attr('x', -cardWidth / 2)
+      .attr('y', d => -getCardHeight(d) / 2)
+      .attr('width', cardWidth)
+      .attr('height', d => getCardHeight(d))
+      .attr('rx', 12)
+      .attr('ry', 12)
+      .attr('fill', d => getNodeColors(d.data, isPrintMode).secondary)
+      .attr('stroke', d => getNodeColors(d.data, isPrintMode).primary)
+      .attr('stroke-width', d => d.data.isCenter ? 3 : 2)
+      .attr('filter', isPrintMode ? 'none' : 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))')
+
+    // Card header bar
+    nodeGroups.append('rect')
+      .attr('x', -cardWidth / 2)
+      .attr('y', d => -getCardHeight(d) / 2)
+      .attr('width', cardWidth)
+      .attr('height', 28)
+      .attr('rx', 12)
+      .attr('ry', 12)
+      .attr('fill', d => getNodeColors(d.data, isPrintMode).primary)
+      .attr('opacity', 0.2)
+
+    // Clip path for header
+    nodeGroups.append('rect')
+      .attr('x', -cardWidth / 2)
+      .attr('y', d => -getCardHeight(d) / 2 + 24)
+      .attr('width', cardWidth)
+      .attr('height', 4)
+      .attr('fill', d => getNodeColors(d.data, isPrintMode).secondary)
+
+    // Header icon and type
+    nodeGroups.append('text')
+      .attr('x', -cardWidth / 2 + 12)
+      .attr('y', d => -getCardHeight(d) / 2 + 18)
+      .attr('font-size', '13px')
+      .attr('fill', d => getNodeColors(d.data, isPrintMode).primary)
+      .attr('font-weight', '600')
+      .text(d => {
+        const node = d.data as GraphNode
+        if (node.type === 'case') return node.isCenter ? '📍 คดีหลัก' : '📋 คดีเชื่อมโยง'
+        if (node.type === 'person') {
+          const role = node.role || node.data?.person_type
+          if (role === 'Suspect') return '🔴 ผู้ต้องสงสัย'
+          if (role === 'Arrested') return '🟠 ผู้ถูกจับกุม'
+          if (role === 'Victim') return '🟣 ผู้เสียหาย'
+          return '🟢 อ้างอิง'
+        }
+        if (node.type === 'sample' || node.type === 'dna') {
+          return hasMatch(node) ? '🧬 DNA Match' : '🧬 No Match'
+        }
+        return '📍'
+      })
+
+    // Main content - Title
+    nodeGroups.append('text')
+      .attr('x', -cardWidth / 2 + 12)
+      .attr('y', d => -getCardHeight(d) / 2 + 45)
+      .attr('font-size', '12px')
+      .attr('font-weight', '600')
+      .attr('fill', colors.text)
+      .text(d => {
+        const node = d.data as GraphNode
+        const label = node.data?.case_number || node.data?.full_name || 
+                     node.data?.sample_description || node.label || node.id
+        return label.length > 22 ? label.substring(0, 22) + '...' : label
+      })
+
+    // Detail line 1
+    nodeGroups.append('text')
+      .attr('x', -cardWidth / 2 + 12)
+      .attr('y', d => -getCardHeight(d) / 2 + 60)
+      .attr('font-size', '10px')
+      .attr('fill', colors.textMuted)
+      .text(d => {
+        const node = d.data as GraphNode
+        const data = node.data || {}
+        if (node.type === 'case') {
+          const type = data.case_type || data.case_category || ''
+          const date = formatThaiDate(data.case_date)
+          return `🔫 ${type.substring(0, 12)} | 📅 ${date}`
+        }
+        if (node.type === 'person') {
+          return `🪪 ${maskIdNumber(data.id_number)}`
+        }
+        if (node.type === 'sample' || node.type === 'dna') {
+          const matchCount = data.match_count || 0
+          return matchCount > 0 ? `✅ ตรงกับ ${matchCount} บุคคล` : '❌ ไม่พบ DNA ตรง'
+        }
+        return ''
+      })
+
+    // Detail line 2
+    nodeGroups.append('text')
+      .attr('x', -cardWidth / 2 + 12)
+      .attr('y', d => -getCardHeight(d) / 2 + 75)
+      .attr('font-size', '10px')
+      .attr('fill', colors.textMuted)
+      .text(d => {
+        const node = d.data as GraphNode
+        const data = node.data || {}
+        if (node.type === 'case') {
+          const province = data.province || ''
+          const station = data.police_station || data.analyst_name || ''
+          return `📍 ${province.substring(0, 8)} | 🏛️ ${station.substring(0, 10)}`
+        }
+        if (node.type === 'person') {
+          const caseCount = data.case_count || 0
+          return caseCount > 0 ? `📊 พบใน ${caseCount} คดี` : ''
+        }
+        return ''
+      })
+
+    // Case number badge for cases
+    nodeGroups.filter(d => d.data.type === 'case')
+      .append('text')
+      .attr('x', -cardWidth / 2 + 12)
+      .attr('y', d => -getCardHeight(d) / 2 + 85)
+      .attr('font-size', '9px')
+      .attr('font-family', 'monospace')
+      .attr('fill', d => getNodeColors(d.data, isPrintMode).primary)
+      .attr('font-weight', '600')
+      .text(d => d.data.data?.case_number || d.data.label || '')
+
+    // Expand/collapse indicator
+    nodeGroups.filter(d => d.children && d.children.length > 0)
+      .append('circle')
+      .attr('cx', 0)
+      .attr('cy', d => getCardHeight(d) / 2 + 10)
+      .attr('r', 10)
+      .attr('fill', colors.cardBg)
+      .attr('stroke', colors.border)
+      .attr('stroke-width', 1)
+
+    nodeGroups.filter(d => d.children && d.children.length > 0)
+      .append('text')
+      .attr('x', 0)
+      .attr('y', d => getCardHeight(d) / 2 + 14)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('fill', colors.textMuted)
+      .text(d => d.children?.length || 0)
+
+    // Interactions
+    nodeGroups
+      .on('mouseenter', function(event, d) {
+        d3.select(this).select('rect')
+          .transition().duration(200)
+          .attr('stroke-width', 4)
+        
+        if (d.data.type === 'sample' || d.data.type === 'dna') {
+          setHoveredNode(d.data)
+          setTooltipPos({ x: event.pageX, y: event.pageY })
+        }
+      })
+      .on('mouseleave', function() {
+        d3.select(this).select('rect')
+          .transition().duration(200)
+          .attr('stroke-width', (d: any) => d.data.isCenter ? 3 : 2)
+        setHoveredNode(null)
+      })
+      .on('click', (event, d) => {
+        event.stopPropagation()
+        onNodeClick?.(d.data)
+      })
+
+    // Drag behavior
+    const drag = d3.drag<SVGGElement, d3.HierarchyPointNode<GraphNode>>()
+      .on('drag', function(event, d) {
+        d.x = event.x
+        d.y = event.y
+        d3.select(this).attr('transform', `translate(${d.x},${d.y})`)
+        
+        // Update links
+        links.attr('d', d3.linkVertical<any, any>()
+          .x(d => d.x)
+          .y(d => d.y))
+      })
+
+    nodeGroups.call(drag as any)
+
+  }, [nodes, edges, dimensions, isPrintMode, showNoMatch, colors, buildHierarchy, onNodeClick])
+
+  // Handle print
+  const handlePrint = useCallback(() => {
+    setIsPrintMode(true)
+    setTimeout(() => {
+      window.print()
+      setTimeout(() => setIsPrintMode(false), 500)
+    }, 100)
+  }, [])
+
+  return (
+    <div 
+      ref={containerRef} 
+      className={`hierarchical-graph-container ${isPrintMode ? 'print-mode' : ''} ${isFullscreen ? 'fullscreen' : ''}`}
+      style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: '100%',
+        background: colors.bg,
+        borderRadius: isFullscreen ? 0 : '12px',
+        overflow: 'hidden'
+      }}
+    >
+      <style>{`
+        .hierarchical-graph-container {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .hierarchical-graph-container.fullscreen {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 9999 !important;
+          border-radius: 0 !important;
+        }
+        
+        .graph-controls {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          z-index: 100;
+        }
+        
+        .control-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          background: ${colors.cardBg};
+          border: 1px solid ${colors.border};
+          border-radius: 10px;
+          color: ${isPrintMode ? '#374151' : '#00f0ff'};
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+          background: ${isPrintMode ? '#f3f4f6' : 'rgba(0, 240, 255, 0.15)'};
+          transform: scale(1.05);
+        }
+        
+        .control-btn.active {
+          background: ${isPrintMode ? '#0891b2' : 'rgba(0, 240, 255, 0.25)'};
+          color: ${isPrintMode ? '#ffffff' : '#00f0ff'};
+        }
+        
+        .control-btn.warning {
+          color: ${isPrintMode ? '#dc2626' : '#ff2d55'};
+        }
+        
+        .zoom-display {
+          font-size: 10px;
+          text-align: center;
+          color: ${colors.textMuted};
+          margin-top: -4px;
+        }
+        
+        .dna-tooltip {
+          position: fixed;
+          background: ${colors.cardBg};
+          border: 2px solid ${isPrintMode ? '#db2777' : '#ec4899'};
+          border-radius: 12px;
+          padding: 12px 16px;
+          min-width: 220px;
+          max-width: 300px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, ${isPrintMode ? '0.15' : '0.5'});
+          z-index: 1000;
+          pointer-events: none;
+        }
+        
+        .dna-tooltip h4 {
+          margin: 0 0 8px 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: ${isPrintMode ? '#db2777' : '#ec4899'};
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .dna-tooltip ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        
+        .dna-tooltip li {
+          font-size: 11px;
+          color: ${colors.text};
+          padding: 4px 0;
+          border-bottom: 1px solid ${colors.border};
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .dna-tooltip li:last-child {
+          border-bottom: none;
+        }
+        
+        .legend {
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          background: ${colors.cardBg};
+          border: 1px solid ${colors.border};
+          border-radius: 12px;
+          padding: 12px 16px;
+          z-index: 100;
+        }
+        
+        .legend h4 {
+          margin: 0 0 10px 0;
+          font-size: 12px;
+          font-weight: 600;
+          color: ${colors.text};
+        }
+        
+        .legend-items {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 11px;
+          color: ${colors.textMuted};
+        }
+        
+        .legend-line {
+          width: 24px;
+          height: 3px;
+          border-radius: 2px;
+        }
+        
+        @media print {
+          .graph-controls, .legend {
+            display: none !important;
+          }
+          .hierarchical-graph-container {
+            background: #ffffff !important;
+          }
+        }
+      `}</style>
+
+      {/* Controls */}
+      <div className="graph-controls">
+        <button 
+          className="control-btn"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ'}
+        >
+          {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+        </button>
+        
+        <button 
+          className={`control-btn ${!showNoMatch ? 'active' : ''}`}
+          onClick={() => setShowNoMatch(!showNoMatch)}
+          title={showNoMatch ? 'ซ่อน No Match' : 'แสดง No Match'}
+        >
+          {showNoMatch ? <Eye size={20} /> : <EyeOff size={20} />}
+        </button>
+        
+        <button 
+          className={`control-btn ${isPrintMode ? 'active' : ''}`}
+          onClick={() => setIsPrintMode(!isPrintMode)}
+          title={isPrintMode ? 'โหมดปกติ' : 'โหมดพิมพ์'}
+        >
+          <Printer size={20} />
+        </button>
+        
+        <button 
+          className="control-btn"
+          onClick={handlePrint}
+          title="พิมพ์"
+        >
+          📄
+        </button>
+        
+        <button 
+          className="control-btn"
+          onClick={() => {
+            if (svgRef.current) {
+              const svg = d3.select(svgRef.current)
+              svg.transition().duration(500).call(
+                d3.zoom<SVGSVGElement, unknown>().transform as any,
+                d3.zoomIdentity.translate(150, 80)
+              )
+            }
+          }}
+          title="รีเซ็ตมุมมอง"
+        >
+          <RotateCcw size={20} />
+        </button>
+        
+        <div className="zoom-display">{Math.round(zoomLevel * 100)}%</div>
+      </div>
+
+      {/* Legend */}
+      <div className="legend">
+        <h4>สัญลักษณ์</h4>
+        <div className="legend-items">
+          <div className="legend-item">
+            <span style={{ color: colors.case.primary }}>■</span>
+            <span>คดีหลัก</span>
+          </div>
+          <div className="legend-item">
+            <span style={{ color: colors.caseLinked.primary }}>■</span>
+            <span>คดีเชื่อมโยง</span>
+          </div>
+          <div className="legend-item">
+            <span style={{ color: colors.dna.primary }}>■</span>
+            <span>DNA/วัตถุพยาน</span>
+          </div>
+          <div className="legend-item">
+            <span style={{ color: colors.suspect.primary }}>■</span>
+            <span>ผู้ต้องสงสัย</span>
+          </div>
+          <div className="legend-item">
+            <span style={{ color: colors.reference.primary }}>■</span>
+            <span>อ้างอิง</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-line" style={{ background: colors.line.dna }} />
+            <span>DNA Match</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-line" style={{ background: colors.line.found, opacity: 0.7 }} />
+            <span>พบใน</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SVG */}
+      <svg
+        ref={svgRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        style={{ display: 'block' }}
+      />
+
+      {/* DNA Tooltip */}
+      {hoveredNode && (hoveredNode.type === 'sample' || hoveredNode.type === 'dna') && (
+        <div 
+          className="dna-tooltip"
+          style={{ 
+            left: tooltipPos.x + 15, 
+            top: tooltipPos.y - 10 
+          }}
+        >
+          <h4>📋 รายการวัตถุพยาน</h4>
+          <ul>
+            <li>
+              <span>🧬</span>
+              <span>{hoveredNode.data?.sample_description || hoveredNode.label}</span>
+            </li>
+            {hoveredNode.data?.lab_number && (
+              <li>
+                <span>🏷️</span>
+                <span>Lab: {hoveredNode.data.lab_number}</span>
+              </li>
+            )}
+            {hoveredNode.data?.evidence_type && (
+              <li>
+                <span>🔬</span>
+                <span>{hoveredNode.data.evidence_type}</span>
+              </li>
+            )}
+            {hoveredNode.data?.match_count > 0 && (
+              <li>
+                <span>✅</span>
+                <span>ตรงกัน {hoveredNode.data.match_count} ตัวอย่าง</span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
