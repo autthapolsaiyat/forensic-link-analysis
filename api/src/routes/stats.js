@@ -39,6 +39,34 @@ router.get('/overview', async (req, res, next) => {
 
 /**
  * @swagger
+ * /stats/by-year:
+ *   get:
+ *     summary: สถิติแยกตามปี (สำหรับ Live Import Monitor)
+ *     tags: [Statistics]
+ *     responses:
+ *       200:
+ *         description: สถิติแยกตามปี
+ */
+router.get('/by-year', async (req, res, next) => {
+    try {
+        const result = await query(`
+            SELECT 
+                YEAR(case_date) as year,
+                COUNT(*) as count
+            FROM cases
+            WHERE case_date IS NOT NULL
+            GROUP BY YEAR(case_date)
+            ORDER BY year DESC
+        `);
+        
+        res.json({ data: result.recordset });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * @swagger
  * /stats/by-province:
  *   get:
  *     summary: สถิติแยกตามจังหวัด
@@ -227,31 +255,3 @@ router.get('/top-linked-cases', async (req, res, next) => {
 });
 
 module.exports = router;
-
-/**
- * @swagger
- * /stats/by-year:
- *   get:
- *     summary: สถิติแยกตามปี (สำหรับ Live Import Monitor)
- *     tags: [Statistics]
- *     responses:
- *       200:
- *         description: สถิติแยกตามปี
- */
-router.get('/by-year', async (req, res, next) => {
-    try {
-        const result = await query(`
-            SELECT 
-                YEAR(case_date) as year,
-                COUNT(*) as count
-            FROM cases
-            WHERE case_date IS NOT NULL
-            GROUP BY YEAR(case_date)
-            ORDER BY year DESC
-        `);
-        
-        res.json({ data: result.recordset });
-    } catch (err) {
-        next(err);
-    }
-});
