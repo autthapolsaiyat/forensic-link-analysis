@@ -11,7 +11,7 @@ import {
   FileText, UserX, UserMinus, User, Dna, FlaskConical
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
-import JarvisGraph from '../components/JarvisGraph'
+import JarvisGraphEnhanced from '../components/JarvisGraphEnhanced'
 
 interface GraphNode {
   id: string
@@ -565,7 +565,7 @@ export default function JarvisNetworkPage() {
             </div>
           </div>
         ) : filteredData.nodes.length > 0 ? (
-          <JarvisGraph
+          <JarvisGraphEnhanced
             nodes={filteredData.nodes}
             edges={filteredData.edges}
             onNodeClick={handleNodeClick}
