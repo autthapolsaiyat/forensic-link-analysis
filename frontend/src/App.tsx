@@ -19,8 +19,6 @@ function App() {
       {/* Fullscreen routes - no layout */}
       <Route path="/live" element={<LiveImportMonitor />} />
       <Route path="/import-monitor" element={<LiveImportMonitor />} />
-      <Route path="/hierarchy/case/:id" element={<HierarchicalNetworkPage />} />
-      <Route path="/hierarchy" element={<HierarchicalNetworkPage />} />
       
       {/* Normal routes with layout */}
       <Route path="/" element={<Layout />}>
@@ -33,6 +31,9 @@ function App() {
         <Route path="case-graph" element={<JarvisNetworkPage />} />
         <Route path="advanced-graph" element={<JarvisNetworkPage />} />
         <Route path="network-graph" element={<JarvisNetworkPage />} />
+        <Route path="hierarchy" element={<HierarchicalNetworkPage />} />
+        <Route path="hierarchy/case/:id" element={<HierarchicalNetworkPage />} />
+        <Route path="hierarchy/person/:id" element={<HierarchicalNetworkPage />} />
         <Route path="icons" element={<IconGallery />} />
         <Route path="persons" element={<PersonsPage />} />
         <Route path="links" element={<LinksPage />} />

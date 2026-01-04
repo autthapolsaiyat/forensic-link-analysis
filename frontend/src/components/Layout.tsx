@@ -10,13 +10,15 @@ import {
   Settings,
   HelpCircle,
   Zap,
-  Shield
+  Shield,
+  GitFork
 } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: Activity, label: 'Dashboard', description: 'ภาพรวม & Insights' },
   { to: '/cases', icon: FileText, label: 'รายการคดี', description: 'ค้นหาและจัดการคดี' },
   { to: '/network-graph', icon: Layers, label: 'Network Investigation', description: 'JARVIS Graph Analysis' },
+  { to: '/hierarchy', icon: GitFork, label: 'Hierarchical View', description: 'ผังความเชื่อมโยง' },
   { to: '/persons', icon: Users, label: 'บุคคลหลายคดี', description: 'วิเคราะห์บุคคล' },
   { to: '/links', icon: Link2, label: 'Case Links', description: 'รายการเชื่อมโยง' },
 ]
