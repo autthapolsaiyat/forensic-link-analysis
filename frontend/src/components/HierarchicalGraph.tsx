@@ -1201,8 +1201,36 @@ export default function HierarchicalGraph({
                   {loadingEvidence ? (
                     <div style={{ fontSize: '12px', color: isPrintMode ? '#9ca3af' : '#6b7280' }}>กำลังโหลด...</div>
                   ) : evidenceSamples.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
-                      {evidenceSamples.slice(0, 10).map((sample: any, idx: number) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                      {evidenceSamples.slice(0, 10).map((sample: any, idx: number) => {
+                        // Detect evidence type from description
+                        const desc = (sample.sample_description || '').toLowerCase()
+                        let typeIcon = '🧬'
+                        let typeName = sample.evidence_type || 'DNA'
+                        
+                        if (desc.includes('เลือด') || desc.includes('blood')) {
+                          typeIcon = '🩸'; typeName = 'เลือด'
+                        } else if (desc.includes('น้ำลาย') || desc.includes('สำลี') || desc.includes('เยื่อบุ')) {
+                          typeIcon = '💧'; typeName = 'น้ำลาย/เยื่อบุ'
+                        } else if (desc.includes('เสื้อ') || desc.includes('กางเกง') || desc.includes('ผ้า') || desc.includes('เสื้อผ้า')) {
+                          typeIcon = '👕'; typeName = 'เสื้อผ้า'
+                        } else if (desc.includes('บุหรี่') || desc.includes('ก้นบุหรี่')) {
+                          typeIcon = '🚬'; typeName = 'บุหรี่'
+                        } else if (desc.includes('ผม') || desc.includes('เส้นผม') || desc.includes('ขน')) {
+                          typeIcon = '💇'; typeName = 'เส้นผม/ขน'
+                        } else if (desc.includes('แก้ว') || desc.includes('ขวด') || desc.includes('กระป๋อง')) {
+                          typeIcon = '🥤'; typeName = 'ภาชนะ'
+                        } else if (desc.includes('มีด') || desc.includes('อาวุธ') || desc.includes('ปืน')) {
+                          typeIcon = '🔪'; typeName = 'อาวุธ'
+                        } else if (desc.includes('ลายนิ้ว')) {
+                          typeIcon = '👆'; typeName = 'ลายนิ้วมือ'
+                        } else if (desc.includes('ยา') || desc.includes('เสพติด')) {
+                          typeIcon = '💊'; typeName = 'ยาเสพติด'
+                        } else if (desc.includes('วงจร') || desc.includes('อิเล็ก') || desc.includes('โทรศัพท์')) {
+                          typeIcon = '📱'; typeName = 'อุปกรณ์อิเล็กทรอนิกส์'
+                        }
+                        
+                        return (
                         <div 
                           key={idx}
                           style={{
@@ -1214,23 +1242,52 @@ export default function HierarchicalGraph({
                           }}
                         >
                           <div style={{ 
-                            fontWeight: 600, 
-                            color: isPrintMode ? '#db2777' : '#ec4899',
-                            marginBottom: '2px'
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginBottom: '4px'
                           }}>
-                            {sample.sample_description || sample.evidence_type || 'วัตถุพยาน'}
+                            <span style={{ fontSize: '16px' }}>{typeIcon}</span>
+                            <span style={{ 
+                              fontWeight: 600, 
+                              color: isPrintMode ? '#db2777' : '#ec4899',
+                              padding: '2px 8px',
+                              background: isPrintMode ? '#fce7f3' : 'rgba(236, 72, 153, 0.2)',
+                              borderRadius: '4px',
+                              fontSize: '10px'
+                            }}>
+                              {typeName}
+                            </span>
+                            {sample.has_match && (
+                              <span style={{ 
+                                color: isPrintMode ? '#16a34a' : '#39ff14', 
+                                fontSize: '10px',
+                                marginLeft: 'auto'
+                              }}>
+                                ✅ Match
+                              </span>
+                            )}
                           </div>
-                          <div style={{ color: isPrintMode ? '#6b7280' : '#8892a0', fontSize: '10px' }}>
-                            {sample.evidence_type && <span>ประเภท: {sample.evidence_type}</span>}
-                            {sample.lab_number && <span> | Lab: {sample.lab_number}</span>}
+                          <div style={{ 
+                            color: isPrintMode ? '#374151' : '#e0e1dd',
+                            fontSize: '11px',
+                            lineHeight: '1.4'
+                          }}>
+                            {sample.sample_description || 'ไม่มีรายละเอียด'}
                           </div>
-                          {sample.has_match && (
-                            <div style={{ color: isPrintMode ? '#16a34a' : '#39ff14', fontSize: '10px', marginTop: '2px' }}>
-                              ✅ มี DNA Match
+                          {sample.lab_number && (
+                            <div style={{ 
+                              color: isPrintMode ? '#6b7280' : '#8892a0', 
+                              fontSize: '9px',
+                              marginTop: '4px',
+                              fontFamily: 'monospace'
+                            }}>
+                              Lab: {sample.lab_number}
                             </div>
                           )}
                         </div>
-                      ))}
+                        )
+                      })}
                       {evidenceSamples.length > 10 && (
                         <div style={{ fontSize: '10px', color: isPrintMode ? '#9ca3af' : '#6b7280', textAlign: 'center' }}>
                           ...และอีก {evidenceSamples.length - 10} รายการ
