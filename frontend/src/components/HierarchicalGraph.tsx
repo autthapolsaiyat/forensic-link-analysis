@@ -20,6 +20,8 @@ interface GraphNode {
   _children?: GraphNode[] // collapsed children
   x?: number
   y?: number
+  sourceCase?: string // DNA มาจากคดีไหน
+  targetCase?: string // DNA เชื่อมไปคดีไหน
 }
 
 interface SavedPosition {
@@ -463,9 +465,13 @@ export default function HierarchicalGraph({
         if (node.type === 'person') {
           return `🪪 ${formatIdNumber(data.id_number)}`
         }
-        if (node.type === 'sample' || node.type === 'dna') {
+        if (node.type === 'sample' || node.type === 'dna' || node.type === 'dna-group') {
+          // Show source case for DNA nodes
+          if (node.sourceCase) {
+            return `📍 จาก: ${node.sourceCase}`
+          }
           const matchCount = data.match_count || 0
-          return matchCount > 0 ? `✅ ตรงกับ ${matchCount} บุคคล` : '⏳ มี DNA แต่ยังไม่ตรงกับใคร'
+          return matchCount > 0 ? `✅ เชื่อม ${matchCount} คดี` : '⏳ รอตรวจสอบ'
         }
         return ''
       })
@@ -487,6 +493,12 @@ export default function HierarchicalGraph({
         if (node.type === 'person') {
           const caseCount = data.case_count || 0
           return caseCount > 0 ? `📊 พบใน ${caseCount} คดี` : ''
+        }
+        if (node.type === 'sample' || node.type === 'dna' || node.type === 'dna-group') {
+          // Show target case for DNA nodes
+          if (node.targetCase) {
+            return `🔗 ไป: ${node.targetCase}`
+          }
         }
         return ''
       })
