@@ -6,8 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Search, Loader2, TreeDeciduous, 
-  ChevronRight, FileText, User, Dna, AlertCircle,
-  X, MapPin, Calendar, Building, Users, Link2
+  ChevronRight, FileText, User, Dna, AlertCircle
 } from 'lucide-react'
 import { personsApi, casesApi, searchApi } from '../services/api'
 import HierarchicalGraph from '../components/HierarchicalGraph'
@@ -20,8 +19,8 @@ interface GraphNode {
   level?: number
   isCenter?: boolean
   data?: any
-  sourceCase?: string // DNA มาจากคดีไหน
-  targetCase?: string // DNA เชื่อมไปคดีไหน
+  sourceCase?: string
+  targetCase?: string
 }
 
 interface GraphEdge {
@@ -31,28 +30,9 @@ interface GraphEdge {
   label?: string
 }
 
-interface SelectedNodeInfo {
-  node: GraphNode
-  connectedNodes: GraphNode[]
-}
-
 const MAX_DEPTH = 5
 const MAX_CASES_PER_PERSON = 10
 const MAX_PERSONS_PER_CASE = 8
-
-// Format Thai date
-const formatThaiDate = (dateStr: string) => {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    const thaiYear = date.getFullYear() + 543
-    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
-                    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
-    return `${date.getDate()} ${months[date.getMonth()]} ${thaiYear % 100}`
-  } catch {
-    return dateStr
-  }
-}
 
 export default function HierarchicalNetworkPage() {
   const { id } = useParams()
@@ -67,10 +47,6 @@ export default function HierarchicalNetworkPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingStatus, setLoadingStatus] = useState('')
   const [stats, setStats] = useState({ depth: 0, persons: 0, cases: 0, dnaLinks: 0 })
-  
-  // Info Panel state
-  const [selectedNodeInfo, setSelectedNodeInfo] = useState<SelectedNodeInfo | null>(null)
-  const [showPanel, setShowPanel] = useState(false)
 
   const { data: searchResults } = useQuery({
     queryKey: ['hierarchy-search', searchTerm],
@@ -78,36 +54,10 @@ export default function HierarchicalNetworkPage() {
     enabled: searchTerm.length >= 2,
   })
 
-  // Find connected nodes for info panel
-  const findConnectedNodes = useCallback((nodeId: string, allNodes: GraphNode[], allEdges: GraphEdge[]) => {
-    const connected: GraphNode[] = []
-    const nodeMap = new Map(allNodes.map(n => [n.id, n]))
-    
-    allEdges.forEach(edge => {
-      const sourceId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id || edge.source
-      const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id || edge.target
-      
-      if (sourceId === nodeId) {
-        const targetNode = nodeMap.get(targetId)
-        if (targetNode) connected.push(targetNode)
-      }
-      if (targetId === nodeId) {
-        const sourceNode = nodeMap.get(sourceId)
-        if (sourceNode) connected.push(sourceNode)
-      }
-    })
-    
-    return connected
-  }, [])
-
-  // Handle node click - show info panel
+  // Handle node click - passed to HierarchicalGraph
   const handleNodeClick = useCallback((node: GraphNode) => {
-    console.log('Node clicked:', node) // Debug log
-    const connected = findConnectedNodes(node.id, graphData.nodes, graphData.edges)
-    console.log('Connected nodes:', connected) // Debug log
-    setSelectedNodeInfo({ node, connectedNodes: connected })
-    setShowPanel(true)
-  }, [graphData.nodes, graphData.edges, findConnectedNodes])
+    console.log('Node clicked from page:', node)
+  }, [])
 
   // =====================================================
   // NEW STRUCTURE: Person → Cases → DNA → Linked Cases
@@ -464,40 +414,9 @@ export default function HierarchicalNetworkPage() {
           )}
         </div>
       </div>
-
-      {/* Info Panel (Right Side - Fixed Overlay) */}
-      {showPanel && selectedNodeInfo && (
-        <div className="fixed right-6 top-24 w-80 max-h-[calc(100vh-120px)] bg-dark-200 rounded-xl border border-cyan-500/30 flex flex-col overflow-hidden shadow-2xl shadow-cyan-500/10 z-50">
-          {/* Panel Header */}
-          <div className="p-4 border-b border-dark-100 flex items-center justify-between bg-dark-300">
-            <div className="flex items-center gap-2">
-              {selectedNodeInfo.node.type === 'case' && <FileText className="w-5 h-5 text-cyan-400" />}
-              {selectedNodeInfo.node.type === 'person' && <User className="w-5 h-5 text-green-400" />}
-              {(selectedNodeInfo.node.type === 'dna' || selectedNodeInfo.node.type === 'dna-group' || selectedNodeInfo.node.type === 'sample') && <Dna className="w-5 h-5 text-pink-400" />}
-              <span className="font-semibold text-white">รายละเอียด</span>
-            </div>
-            <button 
-              onClick={() => setShowPanel(false)}
-              className="p-1 hover:bg-dark-300 rounded transition-colors"
-            >
-              <X className="w-4 h-4 text-slate-400" />
-            </button>
-          </div>
-
-          {/* Panel Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Node Info */}
-            {selectedNodeInfo.node.type === 'case' && (
-              <>
-                <div>
-                  <p className="text-xs text-slate-400 mb-1">เลขคดี</p>
-                  <p className="text-white font-semibold">{selectedNodeInfo.node.data?.case_number || selectedNodeInfo.node.label}</p>
-                </div>
-                {selectedNodeInfo.node.data?.case_type && (
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">ประเภทคดี</p>
-                    <p className="text-cyan-400">{selectedNodeInfo.node.data.case_type}</p>
-                  </div>
+    </div>
+  )
+}
                 )}
                 {selectedNodeInfo.node.data?.case_date && (
                   <div className="flex items-center gap-2">

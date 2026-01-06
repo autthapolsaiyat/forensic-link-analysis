@@ -45,6 +45,25 @@ interface HierarchicalGraphProps {
   height?: number
 }
 
+interface SelectedNodeInfo {
+  node: GraphNode
+  connectedNodes: GraphNode[]
+}
+
+// Format Thai date for panel
+const formatThaiDatePanel = (dateStr: string) => {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    const thaiYear = date.getFullYear() + 543
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
+                    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    return `${date.getDate()} ${months[date.getMonth()]} ${thaiYear}`
+  } catch {
+    return dateStr
+  }
+}
+
 // Color Palette
 const COLORS = {
   dark: {
@@ -164,8 +183,42 @@ export default function HierarchicalGraph({
   const [savedPositions, setSavedPositions] = useState<SavedPosition[]>([]) // Saved layout
   const [hiddenNodes, setHiddenNodes] = useState<Set<string>>(new Set()) // Individually hidden nodes
   const [layoutSaved, setLayoutSaved] = useState(false) // Show save confirmation
+  
+  // Info Panel state (inside component for fullscreen support)
+  const [selectedNodeInfo, setSelectedNodeInfo] = useState<SelectedNodeInfo | null>(null)
+  const [showPanel, setShowPanel] = useState(false)
 
   const colors = isPrintMode ? COLORS.light : COLORS.dark
+
+  // Find connected nodes for panel
+  const findConnectedNodes = useCallback((nodeId: string) => {
+    const connected: GraphNode[] = []
+    const nodeMap = new Map(nodes.map(n => [n.id, n]))
+    
+    edges.forEach(edge => {
+      const sourceId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id || edge.source
+      const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id || edge.target
+      
+      if (sourceId === nodeId) {
+        const targetNode = nodeMap.get(targetId)
+        if (targetNode) connected.push(targetNode)
+      }
+      if (targetId === nodeId) {
+        const sourceNode = nodeMap.get(sourceId)
+        if (sourceNode) connected.push(sourceNode)
+      }
+    })
+    
+    return connected
+  }, [nodes, edges])
+
+  // Handle node click internally
+  const handleInternalNodeClick = useCallback((node: GraphNode) => {
+    const connected = findConnectedNodes(node.id)
+    setSelectedNodeInfo({ node, connectedNodes: connected })
+    setShowPanel(true)
+    onNodeClick?.(node)
+  }, [findConnectedNodes, onNodeClick])
 
   // Format ID based on toggle
   const formatIdNumber = useCallback((id: string) => {
@@ -598,7 +651,7 @@ export default function HierarchicalGraph({
       })
       .on('click', (event, d) => {
         event.stopPropagation()
-        onNodeClick?.(d.data)
+        handleInternalNodeClick(d.data)
       })
 
     // Drag behavior
@@ -616,7 +669,7 @@ export default function HierarchicalGraph({
 
     nodeGroups.call(drag as any)
 
-  }, [nodes, edges, dimensions, isPrintMode, showNoMatch, hiddenNodes, savedPositions, showFullId, colors, buildHierarchy, onNodeClick, hideNode, formatIdNumber])
+  }, [nodes, edges, dimensions, isPrintMode, showNoMatch, hiddenNodes, savedPositions, showFullId, colors, buildHierarchy, handleInternalNodeClick, hideNode, formatIdNumber])
 
   // Handle print
   const handlePrint = useCallback(() => {
@@ -943,6 +996,225 @@ export default function HierarchicalGraph({
               </li>
             )}
           </ul>
+        </div>
+      )}
+
+      {/* Info Panel - Inside component for fullscreen support */}
+      {showPanel && selectedNodeInfo && (
+        <div style={{
+          position: 'absolute',
+          right: '16px',
+          top: '16px',
+          width: '300px',
+          maxHeight: 'calc(100% - 32px)',
+          background: isPrintMode ? '#ffffff' : 'rgba(13, 21, 32, 0.98)',
+          border: `2px solid ${isPrintMode ? '#0891b2' : '#00f0ff'}`,
+          borderRadius: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 10px 40px rgba(0, 240, 255, 0.2)',
+          zIndex: 200
+        }}>
+          {/* Panel Header */}
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(0, 240, 255, 0.2)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: isPrintMode ? '#f9fafb' : 'rgba(0, 240, 255, 0.1)'
+          }}>
+            <span style={{ 
+              fontWeight: 600, 
+              color: isPrintMode ? '#1f2937' : '#00f0ff',
+              fontSize: '14px'
+            }}>
+              {selectedNodeInfo.node.type === 'case' ? '📋' : 
+               selectedNodeInfo.node.type === 'person' ? '👤' : '🧬'} รายละเอียด
+            </span>
+            <button 
+              onClick={() => setShowPanel(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: isPrintMode ? '#6b7280' : '#8892a0',
+                fontSize: '18px',
+                padding: '4px 8px',
+                borderRadius: '4px'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Panel Content */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '16px',
+            color: isPrintMode ? '#1f2937' : '#e0e1dd'
+          }}>
+            {/* Case Info */}
+            {selectedNodeInfo.node.type === 'case' && (
+              <>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>เลขคดี</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: isPrintMode ? '#0891b2' : '#00f0ff' }}>
+                    {selectedNodeInfo.node.data?.case_number || selectedNodeInfo.node.label}
+                  </div>
+                </div>
+                {selectedNodeInfo.node.data?.case_type && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>ประเภทคดี</div>
+                    <div style={{ fontSize: '13px' }}>{selectedNodeInfo.node.data.case_type}</div>
+                  </div>
+                )}
+                {selectedNodeInfo.node.data?.case_date && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>📅 วันที่</div>
+                    <div style={{ fontSize: '13px' }}>{formatThaiDatePanel(selectedNodeInfo.node.data.case_date)}</div>
+                  </div>
+                )}
+                {selectedNodeInfo.node.data?.province && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>📍 จังหวัด</div>
+                    <div style={{ fontSize: '13px' }}>{selectedNodeInfo.node.data.province}</div>
+                  </div>
+                )}
+                {selectedNodeInfo.node.data?.police_station && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>🏛️ สถานี</div>
+                    <div style={{ fontSize: '13px' }}>{selectedNodeInfo.node.data.police_station}</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Person Info */}
+            {selectedNodeInfo.node.type === 'person' && (
+              <>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>ชื่อ-นามสกุล</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: isPrintMode ? '#16a34a' : '#39ff14' }}>
+                    {selectedNodeInfo.node.data?.full_name || selectedNodeInfo.node.label}
+                  </div>
+                </div>
+                {selectedNodeInfo.node.data?.id_number && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>เลขประจำตัว</div>
+                    <div style={{ fontSize: '13px', fontFamily: 'monospace' }}>{selectedNodeInfo.node.data.id_number}</div>
+                  </div>
+                )}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>ประเภท</div>
+                  <span style={{
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: selectedNodeInfo.node.role === 'Suspect' ? 'rgba(255, 45, 85, 0.2)' :
+                               selectedNodeInfo.node.role === 'Arrested' ? 'rgba(255, 107, 53, 0.2)' : 'rgba(57, 255, 20, 0.2)',
+                    color: selectedNodeInfo.node.role === 'Suspect' ? '#ff2d55' :
+                           selectedNodeInfo.node.role === 'Arrested' ? '#ff6b35' : '#39ff14'
+                  }}>
+                    {selectedNodeInfo.node.role === 'Suspect' ? 'ผู้ต้องสงสัย' :
+                     selectedNodeInfo.node.role === 'Arrested' ? 'ผู้ถูกจับกุม' : 'อ้างอิง'}
+                  </span>
+                </div>
+                {selectedNodeInfo.node.data?.case_count && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>📊 จำนวนคดี</div>
+                    <div style={{ fontSize: '13px' }}>พบใน {selectedNodeInfo.node.data.case_count} คดี</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* DNA Info */}
+            {(selectedNodeInfo.node.type === 'dna' || selectedNodeInfo.node.type === 'dna-group' || selectedNodeInfo.node.type === 'sample') && (
+              <>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>DNA Evidence</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: isPrintMode ? '#db2777' : '#ec4899' }}>
+                    {selectedNodeInfo.node.label}
+                  </div>
+                </div>
+                {selectedNodeInfo.node.sourceCase && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>📍 จากคดี</div>
+                    <div style={{ fontSize: '13px', color: isPrintMode ? '#0891b2' : '#00f0ff' }}>{selectedNodeInfo.node.sourceCase}</div>
+                  </div>
+                )}
+                {selectedNodeInfo.node.targetCase && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>🔗 เชื่อมไปคดี</div>
+                    <div style={{ fontSize: '13px', color: isPrintMode ? '#7c3aed' : '#a855f7' }}>{selectedNodeInfo.node.targetCase}</div>
+                  </div>
+                )}
+                {selectedNodeInfo.node.data?.sample_description && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: isPrintMode ? '#6b7280' : '#8892a0', marginBottom: '4px' }}>รายละเอียด</div>
+                    <div style={{ fontSize: '13px' }}>{selectedNodeInfo.node.data.sample_description}</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Connected Nodes */}
+            {selectedNodeInfo.connectedNodes.length > 0 && (
+              <div style={{ 
+                marginTop: '16px', 
+                paddingTop: '16px', 
+                borderTop: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(0, 240, 255, 0.2)'}` 
+              }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: isPrintMode ? '#6b7280' : '#8892a0', 
+                  marginBottom: '8px' 
+                }}>
+                  🔗 เชื่อมโยงกับ ({selectedNodeInfo.connectedNodes.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {selectedNodeInfo.connectedNodes.map((node, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleInternalNodeClick(node)}
+                      style={{
+                        background: isPrintMode ? '#f9fafb' : 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(255, 255, 255, 0.1)'}`,
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        color: isPrintMode ? '#1f2937' : '#e0e1dd',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '12px'
+                      }}
+                    >
+                      <span>{node.type === 'case' ? '📋' : node.type === 'person' ? '👤' : '🧬'}</span>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {node.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Panel Footer */}
+          <div style={{
+            padding: '8px 16px',
+            borderTop: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(0, 240, 255, 0.2)'}`,
+            textAlign: 'center',
+            fontSize: '11px',
+            color: isPrintMode ? '#9ca3af' : '#6b7280'
+          }}>
+            คลิกที่ node อื่นเพื่อดูรายละเอียด
+          </div>
         </div>
       )}
     </div>
