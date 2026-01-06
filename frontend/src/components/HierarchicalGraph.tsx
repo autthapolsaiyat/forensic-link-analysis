@@ -187,6 +187,15 @@ export default function HierarchicalGraph({
   // Info Panel state (inside component for fullscreen support)
   const [selectedNodeInfo, setSelectedNodeInfo] = useState<SelectedNodeInfo | null>(null)
   const [showPanel, setShowPanel] = useState(false)
+  
+  // Draggable panel state
+  const [panelPosition, setPanelPosition] = useState({ x: -1, y: 16 }) // -1 means auto right
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  
+  // Evidence samples state
+  const [evidenceSamples, setEvidenceSamples] = useState<any[]>([])
+  const [loadingEvidence, setLoadingEvidence] = useState(false)
 
   const colors = isPrintMode ? COLORS.light : COLORS.dark
 
@@ -212,13 +221,85 @@ export default function HierarchicalGraph({
     return connected
   }, [nodes, edges])
 
+  // Load evidence samples for a case
+  const loadEvidenceSamples = useCallback(async (caseId: string) => {
+    setLoadingEvidence(true)
+    try {
+      const response = await fetch(`https://forensic-link-api.azurewebsites.net/api/v1/cases/${caseId}/samples`)
+      const result = await response.json()
+      setEvidenceSamples(result.data || [])
+    } catch (e) {
+      console.error('Failed to load evidence:', e)
+      setEvidenceSamples([])
+    } finally {
+      setLoadingEvidence(false)
+    }
+  }, [])
+
   // Handle node click internally
   const handleInternalNodeClick = useCallback((node: GraphNode) => {
     const connected = findConnectedNodes(node.id)
     setSelectedNodeInfo({ node, connectedNodes: connected })
     setShowPanel(true)
+    
+    // Load evidence samples if it's a case
+    if (node.type === 'case' && node.data?.case_id) {
+      loadEvidenceSamples(node.data.case_id)
+    } else if (node.type === 'dna' && node.sourceCase) {
+      // For DNA, try to get case_id from connected case
+      const sourceCase = connected.find(n => n.type === 'case')
+      if (sourceCase?.data?.case_id) {
+        loadEvidenceSamples(sourceCase.data.case_id)
+      } else {
+        setEvidenceSamples([])
+      }
+    } else {
+      setEvidenceSamples([])
+    }
+    
     onNodeClick?.(node)
-  }, [findConnectedNodes, onNodeClick])
+  }, [findConnectedNodes, onNodeClick, loadEvidenceSamples])
+
+  // Panel drag handlers
+  const handlePanelMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true)
+    const rect = (e.target as HTMLElement).closest('.info-panel')?.getBoundingClientRect()
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      })
+    }
+  }, [])
+
+  const handlePanelMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !containerRef.current) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const newX = e.clientX - containerRect.left - dragOffset.x
+    const newY = e.clientY - containerRect.top - dragOffset.y
+    
+    // Keep panel within bounds
+    setPanelPosition({
+      x: Math.max(0, Math.min(newX, containerRect.width - 320)),
+      y: Math.max(0, Math.min(newY, containerRect.height - 200))
+    })
+  }, [isDragging, dragOffset])
+
+  const handlePanelMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  // Add/remove drag event listeners
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handlePanelMouseMove)
+      window.addEventListener('mouseup', handlePanelMouseUp)
+    }
+    return () => {
+      window.removeEventListener('mousemove', handlePanelMouseMove)
+      window.removeEventListener('mouseup', handlePanelMouseUp)
+    }
+  }, [isDragging, handlePanelMouseMove, handlePanelMouseUp])
 
   // Format ID based on toggle
   const formatIdNumber = useCallback((id: string) => {
@@ -999,13 +1080,16 @@ export default function HierarchicalGraph({
         </div>
       )}
 
-      {/* Info Panel - Inside component for fullscreen support */}
+      {/* Info Panel - Draggable */}
       {showPanel && selectedNodeInfo && (
-        <div style={{
+        <div 
+          className="info-panel"
+          style={{
           position: 'absolute',
-          right: '16px',
-          top: '16px',
-          width: '300px',
+          left: panelPosition.x === -1 ? 'auto' : `${panelPosition.x}px`,
+          right: panelPosition.x === -1 ? '16px' : 'auto',
+          top: `${panelPosition.y}px`,
+          width: '320px',
           maxHeight: 'calc(100% - 32px)',
           background: isPrintMode ? '#ffffff' : 'rgba(13, 21, 32, 0.98)',
           border: `2px solid ${isPrintMode ? '#0891b2' : '#00f0ff'}`,
@@ -1016,20 +1100,28 @@ export default function HierarchicalGraph({
           boxShadow: '0 10px 40px rgba(0, 240, 255, 0.2)',
           zIndex: 200
         }}>
-          {/* Panel Header */}
-          <div style={{
+          {/* Panel Header - Draggable */}
+          <div 
+            onMouseDown={handlePanelMouseDown}
+            style={{
             padding: '12px 16px',
             borderBottom: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(0, 240, 255, 0.2)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: isPrintMode ? '#f9fafb' : 'rgba(0, 240, 255, 0.1)'
+            background: isPrintMode ? '#f9fafb' : 'rgba(0, 240, 255, 0.1)',
+            cursor: 'move',
+            userSelect: 'none'
           }}>
             <span style={{ 
               fontWeight: 600, 
               color: isPrintMode ? '#1f2937' : '#00f0ff',
-              fontSize: '14px'
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}>
+              <span style={{ cursor: 'grab' }}>⋮⋮</span>
               {selectedNodeInfo.node.type === 'case' ? '📋' : 
                selectedNodeInfo.node.type === 'person' ? '👤' : '🧬'} รายละเอียด
             </span>
@@ -1089,6 +1181,66 @@ export default function HierarchicalGraph({
                     <div style={{ fontSize: '13px' }}>{selectedNodeInfo.node.data.police_station}</div>
                   </div>
                 )}
+                
+                {/* Evidence Samples */}
+                <div style={{ 
+                  marginTop: '16px', 
+                  paddingTop: '16px', 
+                  borderTop: `1px solid ${isPrintMode ? '#e5e7eb' : 'rgba(0, 240, 255, 0.2)'}` 
+                }}>
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: isPrintMode ? '#6b7280' : '#8892a0', 
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    🧬 วัตถุพยาน DNA ({loadingEvidence ? '...' : evidenceSamples.length})
+                  </div>
+                  {loadingEvidence ? (
+                    <div style={{ fontSize: '12px', color: isPrintMode ? '#9ca3af' : '#6b7280' }}>กำลังโหลด...</div>
+                  ) : evidenceSamples.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                      {evidenceSamples.slice(0, 10).map((sample: any, idx: number) => (
+                        <div 
+                          key={idx}
+                          style={{
+                            background: isPrintMode ? '#fdf2f8' : 'rgba(236, 72, 153, 0.1)',
+                            border: `1px solid ${isPrintMode ? '#fbcfe8' : 'rgba(236, 72, 153, 0.3)'}`,
+                            borderRadius: '6px',
+                            padding: '8px 10px',
+                            fontSize: '11px'
+                          }}
+                        >
+                          <div style={{ 
+                            fontWeight: 600, 
+                            color: isPrintMode ? '#db2777' : '#ec4899',
+                            marginBottom: '2px'
+                          }}>
+                            {sample.sample_description || sample.evidence_type || 'วัตถุพยาน'}
+                          </div>
+                          <div style={{ color: isPrintMode ? '#6b7280' : '#8892a0', fontSize: '10px' }}>
+                            {sample.evidence_type && <span>ประเภท: {sample.evidence_type}</span>}
+                            {sample.lab_number && <span> | Lab: {sample.lab_number}</span>}
+                          </div>
+                          {sample.has_match && (
+                            <div style={{ color: isPrintMode ? '#16a34a' : '#39ff14', fontSize: '10px', marginTop: '2px' }}>
+                              ✅ มี DNA Match
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {evidenceSamples.length > 10 && (
+                        <div style={{ fontSize: '10px', color: isPrintMode ? '#9ca3af' : '#6b7280', textAlign: 'center' }}>
+                          ...และอีก {evidenceSamples.length - 10} รายการ
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: isPrintMode ? '#9ca3af' : '#6b7280' }}>ไม่พบวัตถุพยาน</div>
+                  )}
+                </div>
               </>
             )}
 
