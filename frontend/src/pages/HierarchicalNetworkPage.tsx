@@ -308,7 +308,6 @@ export default function HierarchicalNetworkPage() {
   const handleSearchClick = (type: string, resultId: string) => {
     setSearchTerm('')
     setSelectedEntity({ type, id: resultId })
-    setShowPanel(false)
     loadPersonNetworkNew(resultId)
   }
 
