@@ -10,7 +10,7 @@ import {
 
 interface GraphNode {
   id: string
-  type: 'case' | 'person' | 'sample' | 'dna'
+  type: 'case' | 'person' | 'sample' | 'dna' | 'dna-group'
   label: string
   role?: string
   level?: number
@@ -113,7 +113,7 @@ const getNodeColors = (node: GraphNode, isPrintMode: boolean) => {
     if (role === 'Victim') return palette.victim
     return palette.reference
   }
-  if (node.type === 'sample' || node.type === 'dna') {
+  if (node.type === 'sample' || node.type === 'dna' || node.type === 'dna-group') {
     const hasMatch = node.data?.match_count > 0 || node.data?.has_match
     return hasMatch ? palette.dna : palette.noMatch
   }
@@ -122,7 +122,7 @@ const getNodeColors = (node: GraphNode, isPrintMode: boolean) => {
 
 // Check if node has DNA match
 const hasMatch = (node: GraphNode) => {
-  if (node.type !== 'sample' && node.type !== 'dna') return true
+  if (node.type !== 'sample' && node.type !== 'dna' && node.type !== 'dna-group') return true
   const data = node.data || {}
   // Has match if: match_count > 0 OR has_match is explicitly true
   if (data.match_count > 0) return true
@@ -417,6 +417,10 @@ export default function HierarchicalGraph({
           if (role === 'Victim') return '🟣 ผู้เสียหาย'
           return '🟢 อ้างอิง'
         }
+        if (node.type === 'dna-group') {
+          const count = node.data?.case_count || node.data?.person_count || 0
+          return `🧬 DNA Evidence [${count}]`
+        }
         if (node.type === 'sample' || node.type === 'dna') {
           return hasMatch(node) ? '🧬 DNA Match' : '🧬 No Match'
         }
@@ -432,6 +436,10 @@ export default function HierarchicalGraph({
       .attr('fill', colors.text)
       .text(d => {
         const node = d.data as GraphNode
+        // For DNA group, show description with count
+        if (node.type === 'dna-group') {
+          return node.data?.sample_description || node.label || 'DNA Evidence'
+        }
         const label = node.data?.case_number || node.data?.full_name || 
                      node.data?.sample_description || node.label || node.id
         return label.length > 22 ? label.substring(0, 22) + '...' : label
