@@ -363,9 +363,9 @@ export default function HierarchicalNetworkPage() {
   }
 
   return (
-    <div className="p-6 h-[calc(100vh-64px)] flex gap-4">
+    <div className="p-6 h-[calc(100vh-64px)] relative">
       {/* Main Graph Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -465,15 +465,15 @@ export default function HierarchicalNetworkPage() {
         </div>
       </div>
 
-      {/* Info Panel (Right Side) */}
+      {/* Info Panel (Right Side - Fixed Overlay) */}
       {showPanel && selectedNodeInfo && (
-        <div className="w-80 bg-dark-200 rounded-xl border border-dark-100 flex flex-col overflow-hidden">
+        <div className="fixed right-6 top-24 w-80 max-h-[calc(100vh-120px)] bg-dark-200 rounded-xl border border-cyan-500/30 flex flex-col overflow-hidden shadow-2xl shadow-cyan-500/10 z-50">
           {/* Panel Header */}
-          <div className="p-4 border-b border-dark-100 flex items-center justify-between">
+          <div className="p-4 border-b border-dark-100 flex items-center justify-between bg-dark-300">
             <div className="flex items-center gap-2">
               {selectedNodeInfo.node.type === 'case' && <FileText className="w-5 h-5 text-cyan-400" />}
               {selectedNodeInfo.node.type === 'person' && <User className="w-5 h-5 text-green-400" />}
-              {(selectedNodeInfo.node.type === 'dna' || selectedNodeInfo.node.type === 'dna-group') && <Dna className="w-5 h-5 text-pink-400" />}
+              {(selectedNodeInfo.node.type === 'dna' || selectedNodeInfo.node.type === 'dna-group' || selectedNodeInfo.node.type === 'sample') && <Dna className="w-5 h-5 text-pink-400" />}
               <span className="font-semibold text-white">รายละเอียด</span>
             </div>
             <button 
