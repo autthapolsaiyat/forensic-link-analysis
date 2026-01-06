@@ -79,13 +79,13 @@ export default function HierarchicalNetworkPage() {
   })
 
   // Find connected nodes for info panel
-  const findConnectedNodes = useCallback((nodeId: string, nodes: GraphNode[], edges: GraphEdge[]) => {
+  const findConnectedNodes = useCallback((nodeId: string, allNodes: GraphNode[], allEdges: GraphEdge[]) => {
     const connected: GraphNode[] = []
-    const nodeMap = new Map(nodes.map(n => [n.id, n]))
+    const nodeMap = new Map(allNodes.map(n => [n.id, n]))
     
-    edges.forEach(edge => {
-      const sourceId = typeof edge.source === 'string' ? edge.source : edge.source
-      const targetId = typeof edge.target === 'string' ? edge.target : edge.target
+    allEdges.forEach(edge => {
+      const sourceId = typeof edge.source === 'string' ? edge.source : (edge.source as any).id || edge.source
+      const targetId = typeof edge.target === 'string' ? edge.target : (edge.target as any).id || edge.target
       
       if (sourceId === nodeId) {
         const targetNode = nodeMap.get(targetId)
@@ -102,10 +102,12 @@ export default function HierarchicalNetworkPage() {
 
   // Handle node click - show info panel
   const handleNodeClick = useCallback((node: GraphNode) => {
+    console.log('Node clicked:', node) // Debug log
     const connected = findConnectedNodes(node.id, graphData.nodes, graphData.edges)
+    console.log('Connected nodes:', connected) // Debug log
     setSelectedNodeInfo({ node, connectedNodes: connected })
     setShowPanel(true)
-  }, [graphData, findConnectedNodes])
+  }, [graphData.nodes, graphData.edges, findConnectedNodes])
 
   // =====================================================
   // NEW STRUCTURE: Person → Cases → DNA → Linked Cases
